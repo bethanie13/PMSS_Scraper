@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from Images import Image
 import copy
+import csv
 
 
 def caption_link(attribute, Image):
@@ -59,6 +60,18 @@ def image_resolution(attribute, Image):
         Image.image_resized_resolution[1] = attribute[8:-1]
 
 
+def write_csv(dict):
+    with open('images.csv', 'w') as csvfile:
+        filewriter = csv.writer(csvfile)
+        csv_data = [["Filename", "Transcription", "Upload Date", "Resolution"]]
+        for image in dict.keys():
+            csv_data.append([dict[image].file_name, dict[image].transcription,
+                             dict[image].upload_date, dict[image].image_resized_resolution[0] + "x" +
+                             dict[image].image_resized_resolution[1]])
+        filewriter.writerows(csv_data)
+        csvfile.close()
+
+
 def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
     path = "/home/schmidtt/PycharmProjects/PMSS_Scraper/html/"
@@ -84,6 +97,8 @@ def main():
         print(image + ": ")
         pmss_images[image].list_images()
         print()
+
+    write_csv(pmss_images)
 
 
 if __name__ == "__main__":
