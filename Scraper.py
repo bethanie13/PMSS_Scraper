@@ -21,7 +21,7 @@ def image_file_name(attribute, Images):
     :param Images: an instance of the Images class for storing the given  information
     :return: None
     """
-    if "src" in attribute:
+    if "src=" in attribute:
         ext = attribute[-5:-1]  # the image's file extension to be added after the filename is retrieved
         slash_total = attribute.count("/")
         slash_count = 0
@@ -29,12 +29,14 @@ def image_file_name(attribute, Images):
         for char in attribute:
             if char == "/":
                 slash_count += 1
-            if slash_count == slash_total:  # this indicates the end of the filepath meaning the following will be the filename
-                in_filename = True
             if char == "-":  # This is followed by ###x### indicating the scaled resolution which we don't want
-                in_filename = False  # This is so we stop adding characters and avoid the resolution information
+                if in_filename:
+                    slash_count = 0
+                    in_filename = False  # This is so we stop adding characters and avoid the resolution information
             if in_filename:
                 Images.file_name += char
+            if slash_count == slash_total:  # this indicates the end of the filepath meaning the following will be the filename
+                in_filename = True
 
         Images.file_name += ext  # once the file name is obtained, append the file's extension
         print(Images.file_name)
