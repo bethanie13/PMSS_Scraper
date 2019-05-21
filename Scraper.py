@@ -22,24 +22,29 @@ def image_file_name(attribute, Images):
     :return: None
     """
     if "src=" in attribute:
-        ext = attribute[-5:-1]  # the image's file extension to be added after the filename is retrieved
+        ext = attribute[-5:-1]  # Assuming the extension is 3 characters long save the last few characters
+        if "." not in ext:  # If the "." is not in the extension, the extension is 4 characters long
+            ext = attribute[-6:-1]
         slash_total = attribute.count("/")
         slash_count = 0
-        in_filename = False  # a check so we only append characters related to the filename (ignoring filepath)
+
         for char in attribute:
+
+            if slash_total == slash_count:
+                Images.file_name += char
             if char == "/":
                 slash_count += 1
-            if char == "-":  # This is followed by ###x### indicating the scaled resolution which we don't want
-                if in_filename:
-                    slash_count = 0
-                    in_filename = False  # This is so we stop adding characters and avoid the resolution information
-            if in_filename:
-                Images.file_name += char
-            if slash_count == slash_total:  # this indicates the end of the filepath meaning the following will be the filename
-                in_filename = True
+        hyphen_total = Images.file_name.count("-")
+        hyphen_count = 0
+        final_file = ""
+        for char in Images.file_name:
+            if char == "-":
+                hyphen_count += 1
+            if not hyphen_count == hyphen_total:
+                final_file += char
 
+        Images.file_name = final_file
         Images.file_name += ext  # once the file name is obtained, append the file's extension
-        print(Images.file_name)
 
 
 def main():
