@@ -60,6 +60,24 @@ def image_resolution(attribute, Image):
         Image.image_resized_resolution[1] = attribute[8:-1]
 
 
+def bibliography_pairings(web_page):
+    web_page.select("<table>")
+    print("tbody")
+    web_page.find("tbody")
+    web_page.tbody.tr
+    print("tr")
+    web_page.find("tr")
+
+
+# find “<table>” tag
+#     iterate through “<tbody>” tag
+#         for every <td> tag append text between <td> and </td>
+#         store each string of data in a queue
+#         iterate through bibliography queue
+#   dequeue two items at a time(so they will be in correct pairs,
+#   combining them as a tuple and appending to a list
+
+
 def write_csv(dict):
     with open('images.csv', 'w') as csvfile:
         filewriter = csv.writer(csvfile)
