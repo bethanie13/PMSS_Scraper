@@ -1,9 +1,8 @@
 from bs4 import BeautifulSoup
-from Images import Image
+from Image import Image
+from StackClass import Stack
 import copy
 import csv
-from StackClass import Stack
-from QueueClass import Queue
 
 
 def caption_link(attribute, Image):
@@ -62,6 +61,18 @@ def image_resolution(attribute, Image):
         Image.image_resized_resolution[1] = attribute[8:-1]
 
 
+def write_csv(dict):
+    with open('images.csv', 'w') as csvfile:
+        filewriter = csv.writer(csvfile)
+        csv_data = [["Filename", "Transcription", "Upload Date", "Resolution"]]
+        for image in dict.keys():
+            csv_data.append([dict[image].file_name, dict[image].transcription,
+                             dict[image].upload_date, dict[image].image_resized_resolution[0] + "x" +
+                             dict[image].image_resized_resolution[1]])
+        filewriter.writerows(csv_data)
+        csvfile.close()
+
+
 def bibliography_pairings(web_page):               #pairing the information together that is in each row of the bibliography table
     split_tags = []                                 #empty list before we start to split tags
     tags = web_page.select("table tbody tr td p")    #goes down into the html until we get to the information we are trying to extract
@@ -87,12 +98,6 @@ def bibliography_pairings(web_page):               #pairing the information toge
             print(word)
 
 
-
-
-
-
-
-
 #         for every <td> tag append text between <td> and </td>
 #         store each string of data in a queue
 #         iterate through bibliography queue
@@ -100,46 +105,33 @@ def bibliography_pairings(web_page):               #pairing the information toge
 #   combining them as a tuple and appending to a list
 
 
-def write_csv(dict):
-    with open('images.csv', 'w') as csvfile:
-        filewriter = csv.writer(csvfile)
-        csv_data = [["Filename", "Transcription", "Upload Date", "Resolution"]]
-        for image in dict.keys():
-            csv_data.append([dict[image].file_name, dict[image].transcription,
-                             dict[image].upload_date, dict[image].image_resized_resolution[0] + "x" +
-                             dict[image].image_resized_resolution[1]])
-        filewriter.writerows(csv_data)
-        csvfile.close()
-
-
 def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
-    path = "/Users/bereacollege/Documents/internship/PMSS_Scraper/html/"
+    path = "/home/schmidtt/PycharmProjects/PMSS_Scraper/html/"
     f = open(path + "EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.html")
     web_page = BeautifulSoup(f, 'html.parser')
-    # pmss_images = {}
-    # for image in web_page.find_all('img'):
-    #     temp = Image()
-    #     for attribute in str(image).split():
-    #
-    #         # this is for pulling out the id that will be used for linking images and captions
-    #         caption_link(attribute, temp)
-    #
-    #         # this is to pull the filename out of the html
-    #         image_file_path_info(attribute, temp)
-    #
-    #         image_resolution(attribute, temp)
-    #
-    #         # Using the temporary variable's information to copy over to a proper variable
-    #     if temp.file_name != "cropped.jpg":
-    #         pmss_images[temp.file_name] = copy.copy(temp)
-    # for image in pmss_images.keys():
-    #     print(image + ": ")
-    #     pmss_images[image].list_images()
-    #     print()
-    #
-    # write_csv(pmss_images)
-    bibliography_pairings(web_page)
+    pmss_images = {}
+    for image in web_page.find_all('img'):
+        temp = Image()
+        for attribute in str(image).split():
+
+            # this is for pulling out the id that will be used for linking images and captions
+            caption_link(attribute, temp)
+
+            # this is to pull the filename out of the html
+            image_file_path_info(attribute, temp)
+
+            image_resolution(attribute, temp)
+
+            # Using the temporary variable's information to copy over to a proper variable
+        if temp.file_name != "cropped.jpg":
+            pmss_images[temp.file_name] = copy.copy(temp)
+    for image in pmss_images.keys():
+        print(image + ": ")
+        pmss_images[image].list_images()
+        print()
+
+    write_csv(pmss_images)
 
 
 if __name__ == "__main__":
