@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
-from Images import Image
+from Image import Image
+from StackClass import Stack
 import copy
 import csv
 
@@ -70,6 +71,38 @@ def write_csv(dict):
                              dict[image].image_resized_resolution[1]])
         filewriter.writerows(csv_data)
         csvfile.close()
+
+
+def bibliography_pairings(web_page):               #pairing the information together that is in each row of the bibliography table
+    split_tags = []                                 #empty list before we start to split tags
+    tags = web_page.select("table tbody tr td p")    #goes down into the html until we get to the information we are trying to extract
+    for row in tags:
+        split_tags.append(str(row).split("\n"))
+
+    for tag in split_tags:  # split the tags and use a stack to store the data
+        # print(tag)
+        s = Stack()
+        word = ""
+        variable1 = ""
+        variable2 = ""
+        for link in tag:
+            for char in link:   #breaks up the 1 hugee link into smaller links
+                if char == "<":
+                    s.push("<")     #scans through characters to look for < or >
+                if char == ">":
+                    s.pop()
+                else:
+                    if s.size() == 0:  #will print only the words within the link/tag
+                        word += char
+
+            print(word)
+
+
+#         for every <td> tag append text between <td> and </td>
+#         store each string of data in a queue
+#         iterate through bibliography queue
+#   dequeue two items at a time(so they will be in correct pairs,
+#   combining them as a tuple and appending to a list
 
 
 def main():
