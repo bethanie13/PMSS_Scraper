@@ -6,21 +6,29 @@ import csv
 
 
 def image_info(page_soup):
+    """
+    Finds all images on the page and collects as much information as it can
+    :param page_soup: A Beautiful Soup object
+    :return: A dictionary containing all of the images from the page
+    """
     images_dict = {}
     for image in page_soup.find_all('img'):
         temp = Image()
 
-        # this is for pulling out the id that will be used for linking images and captions
+        # Pull out the id that will be used to find this image's caption
         caption_link(image, temp)
 
-        # this is to pull the filename out of the html
+        # Pull the filename and upload date for this image
         image_file_path_info(image, temp)
 
+        # Record the resolution information for this image
         image_resolution(image, temp)
 
-        # Using the temporary variable's information to copy over to a proper variable
-        if temp.file_name != "cropped.jpg":
-            images_dict[temp.file_name] = copy.copy(temp)
+        # If resolution information is in the filename, strip that information out
+        temp.strip_resolution()
+
+        if temp.file_name != "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg":  # Ignore the header image
+            images_dict[temp.file_name] = copy.copy(temp)  # Copy the image to a dictionary
     return images_dict
 
 
@@ -55,16 +63,16 @@ def image_file_path_info(tag, img):
     if "." not in ext:  # If the "." is not in the extension, the extension is 4 characters long
         ext = img.file_name[-5:]
 
-    hyphen_total = img.file_name.count("-")
-    hyphen_count = 0
-    final_file = ""
-    for char in img.file_name:
-        if char == "-":
-            hyphen_count += 1
-        if not hyphen_count == hyphen_total:
-            final_file += char
+    # hyphen_total = img.file_name.count("-")
+    # hyphen_count = 0
+    # final_file = ""
+    # for char in img.file_name:
+    #     if char == "-":
+    #         hyphen_count += 1
+    #     if not hyphen_count == hyphen_total:
+    #         final_file += char
 
-    img.file_name = final_file + ext  # once the file name is obtained, append the file's extension
+    # img.file_name = final_file + ext  # once the file name is obtained, append the file's extension
 
 
 def image_resolution(tag, img):
@@ -72,7 +80,7 @@ def image_resolution(tag, img):
     Records the resolution of the image that's displayed
     :param tag: A Beautiful Soup Tag object
     :param img: An Image object
-    :return:
+    :return: None
     """
     img.image_resized_resolution[0] = tag.get("width")
     img.image_resized_resolution[1] = tag.get("height")
@@ -83,7 +91,7 @@ def find_captions(page_soup):
     Finds all text that might be a caption (we don't know until we compare the id attribute with the images
     aria-describedby attribute)
     :param page_soup: Beautiful Soup object
-    :return:
+    :return: None
     """
     captions_dict = {}
     for caption in page_soup.find_all('dd'):
@@ -104,14 +112,14 @@ def image_caption_linking(captions_dict, images_dict):
     Matches image objects with their captions
     :param captions_dict: Dictionary holding all captions from the page
     :param images_dict: Dictionary holding all images from the page
-    :return:
+    :return: None
     """
     for caption in captions_dict.keys():
         for image in images_dict.keys():
             if captions_dict[caption].image_link == images_dict[image].caption_link:
                 images_dict[image].caption = captions_dict[caption].caption
 
-                
+
 def write_csv(dict_to_write, csv):
     """
     Uses the csv library to write .csv files containing the image's information
@@ -129,8 +137,8 @@ def write_csv(dict_to_write, csv):
         csvfile.close()
 
 
-def bibliography_pairings(web_page):               #pairing the information together that is in each row of the bibliography table
-    rows = web_page.tbody
+def bibliography_pairings(page_soup):
+    rows = page_soup.tbody
     count_data = 0
     bibliography_dict = {}
     variable1 = ""                 #variables to store the informmation of the data in the rows
@@ -154,9 +162,9 @@ def bibliography_pairings(web_page):               #pairing the information toge
             variable2 = ""
     print(bibliography_dict)
 
+
 def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
-
     path = "/home/schmidtt/PycharmProjects/PMSS_Scraper/html/"
     file = "EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.html"
     f = open(path + file)
@@ -172,5 +180,7 @@ def main():
 
     # write_csv(pmss_images)
     bibliography_pairings(web_page)
+
+
 if __name__ == "__main__":
     main()
