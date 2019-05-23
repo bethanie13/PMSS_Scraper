@@ -1,7 +1,6 @@
 from bs4 import BeautifulSoup
 from Image import Image
 from Caption import Caption
-from StackClass import Stack
 import copy
 import csv
 
@@ -112,7 +111,7 @@ def image_caption_linking(captions_dict, images_dict):
             if captions_dict[caption].image_link == images_dict[image].caption_link:
                 images_dict[image].caption = captions_dict[caption].caption
 
-
+                
 def write_csv(dict_to_write, csv):
     """
     Uses the csv library to write .csv files containing the image's information
@@ -131,39 +130,33 @@ def write_csv(dict_to_write, csv):
 
 
 def bibliography_pairings(web_page):               #pairing the information together that is in each row of the bibliography table
-    split_tags = []                                 #empty list before we start to split tags
-    tags = web_page.select("table tbody tr td p")    #goes down into the html until we get to the information we are trying to extract
-    for row in tags:
-        split_tags.append(str(row).split("\n"))
-
-    for tag in split_tags:  # split the tags and use a stack to store the data
-        # print(tag)
-        s = Stack()
-        word = ""
-        variable1 = ""
-        variable2 = ""
-        for link in tag:
-            for char in link:   #breaks up the 1 hugee link into smaller links
-                if char == "<":
-                    s.push("<")     #scans through characters to look for < or >
-                if char == ">":
-                    s.pop()
-                else:
-                    if s.size() == 0:  #will print only the words within the link/tag
-                        word += char
-
-            print(word)
-
-
-#         for every <td> tag append text between <td> and </td>
-#         store each string of data in a queue
-#         iterate through bibliography queue
-#   dequeue two items at a time(so they will be in correct pairs,
-#   combining them as a tuple and appending to a list
-
+    rows = web_page.tbody
+    count_data = 0
+    bibliography_dict = {}
+    variable1 = ""                 #variables to store the informmation of the data in the rows
+    variable2 = ""
+    for row in rows.children:            #gets the child tag of table row
+        if row != "\n":
+            for table_data in row.children:     #gets the child tag of table data
+                if table_data != "\n":
+                    for p in table_data.children: #gets the information/tags in the tag p
+                        if p != "\n":
+                            if count_data == 0:
+                                variable1 = p.string #if the count is 0 then retrieve the information and put it in variable 1
+                                count_data += 1
+                            elif count_data != 0: #if the count is not 0 then retrieve the information and put it in variable 2
+                                variable2 = p.string
+                                count_data += 1
+        if count_data == 2:                     #if count is 2 then reset the count
+            count_data = 0
+            bibliography_dict[variable1] = variable2  #store variables into the dictionary with key and value
+            variable1 = ""
+            variable2 = ""
+    print(bibliography_dict)
 
 def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
+
     path = "/home/schmidtt/PycharmProjects/PMSS_Scraper/html/"
     file = "EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.html"
     f = open(path + file)
@@ -178,7 +171,6 @@ def main():
         print()
 
     # write_csv(pmss_images)
-
-
+    bibliography_pairings(web_page)
 if __name__ == "__main__":
     main()
