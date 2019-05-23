@@ -111,8 +111,7 @@ def image_caption_linking(captions_dict, images_dict):
             if captions_dict[caption].image_link == images_dict[image].caption_link:
                 images_dict[image].caption = captions_dict[caption].caption
 
-
-
+                
 def write_csv(dict_to_write, csv):
     """
     Uses the csv library to write .csv files containing the image's information
@@ -157,7 +156,8 @@ def bibliography_pairings(web_page):               #pairing the information toge
 
 def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
-    path = "/Users/bereacollege/Documents/internship/PMSS_Scraper/html/"
+
+    path = "/home/schmidtt/PycharmProjects/PMSS_Scraper/html/"
     file = "EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.html"
     f = open(path + file)
     web_page = BeautifulSoup(f, 'html.parser')
@@ -165,10 +165,10 @@ def main():
     captions = find_captions(web_page)
     image_caption_linking(captions, pmss_images)
 
-    # for image in pmss_images.keys():
-    #     print(image + ": ")
-    #     pmss_images[image].list_images()
-    #     print()
+    for image in pmss_images.keys():
+        print(image + ": ")
+        pmss_images[image].list_images()
+        print()
 
     # write_csv(pmss_images)
     bibliography_pairings(web_page)
