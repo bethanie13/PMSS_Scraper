@@ -5,6 +5,7 @@ import copy
 import csv
 from os import listdir
 from os.path import isfile, join
+from Page import Page
 
 
 def image_info(page_soup):
@@ -127,26 +128,27 @@ def bibliography_pairings(page_soup):
     rows = page_soup.tbody
     count_data = 0
     bibliography_dict = {}
-    variable1 = ""                 #variables to store the informmation of the data in the rows
-    variable2 = ""
-    for row in rows.children:            #gets the child tag of table row
+    title = ""                 # variables to store the informmation of the data in the rows
+    info = ""
+    for row in rows.children:            # gets the child tag of table row
         if row != "\n":
-            for table_data in row.children:     #gets the child tag of table data
+            for table_data in row.children:     # gets the child tag of table data
                 if table_data != "\n":
-                    for p in table_data.children: #gets the information/tags in the tag p
+                    for p in table_data.children:  # gets the information/tags in the tag p
                         if p != "\n":
+                            # store the information two at a time
                             if count_data == 0:
-                                variable1 = p.string #if the count is 0 then retrieve the information and put it in variable 1
+                                title = p.string  # if the count is 0 then retrieve the information and put it in variable 1
                                 count_data += 1
-                            elif count_data != 0: #if the count is not 0 then retrieve the information and put it in variable 2
-                                variable2 = p.string
+                            elif count_data != 0: # if the count is not 0 then retrieve the information and put it in variable 2
+                                info = p.string
                                 count_data += 1
-        if count_data == 2:                     #if count is 2 then reset the count
+        if count_data == 2:                     # if count is 2 then reset the count
             count_data = 0
-            bibliography_dict[variable1] = variable2  #store variables into the dictionary with key and value
-            variable1 = ""
-            variable2 = ""
-    print(bibliography_dict)
+            bibliography_dict[title] = info  # store variables into the dictionary with key and value
+            title = ""
+            info = ""
+    return bibliography_dict
 
 
 def main():
@@ -155,20 +157,27 @@ def main():
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     file = "EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.html"
     pmss_images = {}
+    pmss_pages = []
     for file in onlyfiles:
+        current_page = Page()
         f = open(path + file)
         web_page = BeautifulSoup(f, 'html.parser')
         pmss_images[file] = image_info(web_page)
         captions = find_captions(web_page)
         image_caption_linking(captions, pmss_images[file])
+        current_page.images = pmss_images
+        current_page.bibliography = bibliography_pairings(web_page)
+        current_page.html = file
+        pmss_pages.append(copy.copy(current_page))
     for file in onlyfiles:
         for image in pmss_images[file].keys():
-            print(image + ": ")
-            pmss_images[file][image].list_images()
-            print()
+            # print(image + ": ")
+            # pmss_images[file][image].list_images()
+            print(pmss_images[file][image])
+
 
     # write_csv(pmss_images)
-    bibliography_pairings(web_page)
+    print(pmss_pages[0].html)
 
 
 
