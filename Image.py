@@ -3,10 +3,20 @@ class Image:
         self.file_name = ""
         self.caption_link = ""
         self.transcription = ""
-        self.page_source = ""
         self.upload_date = ""
         self.caption = ""
         self.image_resized_resolution = [0, 0]
+
+    def __str__(self):
+        """
+        Returns all of the class's variables in a string
+        :return: a string containing all of the class's variables
+        """
+        return "File name: {}\nCaption: {}\nResized resolution: {}x{}" \
+               "\nTranscription: {}\nUpload date: {}\n\n".format(self.file_name, self.caption,
+                                                                 self.image_resized_resolution[0],
+                                                                 self.image_resized_resolution[1],
+                                                                 self.transcription, self.upload_date)
 
     def strip_resolution(self):
         """
@@ -41,11 +51,12 @@ class Image:
         This is to list out all of the information for this image
         :return: None
         """
+        variables = [i for i in dir(self) if not callable(i)]
+        print(variables)
         print("Filename: " + self.file_name)
         print("Transcription: " + self.transcription)
         print("Upload Date: " + self.upload_date)
         print("Resolution: " + str(self.image_resized_resolution[0]) + "x" + str(self.image_resized_resolution[1]))
         if self.caption != "":
             print("Caption: " + self.caption)
-
 
