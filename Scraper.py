@@ -1,26 +1,39 @@
 from bs4 import BeautifulSoup
 from Image import Image
 from Caption import Caption
+from Transcription import Transcription
 import copy
+from Page import Page
+
 import csv
+from os import listdir
+from os.path import isfile, join
 
 
 def image_info(page_soup):
+    """
+    Finds all images on the page and collects as much information as it can
+    :param page_soup: A Beautiful Soup object
+    :return: A dictionary containing all of the images from the page
+    """
     images_dict = {}
     for image in page_soup.find_all('img'):
         temp = Image()
 
-        # this is for pulling out the id that will be used for linking images and captions
+        # Pull out the id that will be used to find this image's caption
         caption_link(image, temp)
 
-        # this is to pull the filename out of the html
+        # Pull the filename and upload date for this image
         image_file_path_info(image, temp)
 
+        # Record the resolution information for this image
         image_resolution(image, temp)
 
-        # Using the temporary variable's information to copy over to a proper variable
-        if temp.file_name != "cropped.jpg":
-            images_dict[temp.file_name] = copy.copy(temp)
+        # If resolution information is in the filename, strip that information out
+        temp.strip_resolution()
+
+        if temp.file_name != "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg":  # Ignore the header image
+            images_dict[temp.file_name] = copy.copy(temp)  # Copy the image to a dictionary
     return images_dict
 
 
@@ -51,28 +64,13 @@ def image_file_path_info(tag, img):
     img.upload_date = month + "/" + year
     img.file_name = file_split[-1]
 
-    ext = img.file_name[-4:]  # Assuming the extension is 3 characters long save the last few characters
-    if "." not in ext:  # If the "." is not in the extension, the extension is 4 characters long
-        ext = img.file_name[-5:]
-
-    hyphen_total = img.file_name.count("-")
-    hyphen_count = 0
-    final_file = ""
-    for char in img.file_name:
-        if char == "-":
-            hyphen_count += 1
-        if not hyphen_count == hyphen_total:
-            final_file += char
-
-    img.file_name = final_file + ext  # once the file name is obtained, append the file's extension
-
 
 def image_resolution(tag, img):
     """
     Records the resolution of the image that's displayed
     :param tag: A Beautiful Soup Tag object
     :param img: An Image object
-    :return:
+    :return: None
     """
     img.image_resized_resolution[0] = tag.get("width")
     img.image_resized_resolution[1] = tag.get("height")
@@ -83,7 +81,7 @@ def find_captions(page_soup):
     Finds all text that might be a caption (we don't know until we compare the id attribute with the images
     aria-describedby attribute)
     :param page_soup: Beautiful Soup object
-    :return:
+    :return: None
     """
     captions_dict = {}
     for caption in page_soup.find_all('dd'):
@@ -104,13 +102,80 @@ def image_caption_linking(captions_dict, images_dict):
     Matches image objects with their captions
     :param captions_dict: Dictionary holding all captions from the page
     :param images_dict: Dictionary holding all images from the page
-    :return:
+    :return: None
     """
     for caption in captions_dict.keys():
         for image in images_dict.keys():
             if captions_dict[caption].image_link == images_dict[image].caption_link:
                 images_dict[image].caption = captions_dict[caption].caption
 
+
+def find_transcriptions(page_soup):
+    """""
+    Finds all the text that could possibly be a transcription
+    :param page_soup: Beautiful Soup object
+    :return: None
+    """
+    content = ""
+    transcriptions_dict = {}               #dictionary to store transcriptions
+    row_transcript = page_soup.find_all("div")    #finds all the tags that hold div
+    tag = ''
+    for div in row_transcript:
+        if div.get("class"):
+            if div.get("class")[0] == "entry-content": #content will hold the correct tag
+                content = div
+    for tag in content.children:   #trying to reach the lowest level of the tag looks from children of current tag
+        if tag.name == "p":
+            temp_tag = copy.copy(tag)           #we want information stored in p tag
+            if tag.string:
+                lowest_level = True
+            else:
+                lowest_level = False
+            while lowest_level != True:
+                temp_tag = temp_tag.contents[0]
+                if tag.string:
+                    lowest_level = True
+                else:
+                    lowest_level = False
+
+
+            tag.string
+            temp = Transcription()
+            temp.transcript_link = tag.get_text()
+            transcriptions_dict[] = temp.transcript_link
+        print(page_soup.p)
+        print(row_transcript.find_all("transcription"))
+            # for transcribe in page_soup.find_all("jpg")
+        print(transcriptions_dict)
+
+# def image_transcription_linking(transcriptions_dict,ima )
+
+
+def bibliography_pairings(page_soup):
+    rows = page_soup.tbody
+    count_data = 0
+    bibliography_dict = {}
+    variable1 = ""                 #variables to store the informmation of the data in the rows
+    variable2 = ""
+    if rows:
+
+        for row in rows.children:            #gets the child tag of table row
+            if row != "\n":
+                for table_data in row.children:     #gets the child tag of table data
+                    if table_data != "\n":
+                        for p in table_data.children: #gets the information/tags in the tag p
+                            if p != "\n":
+                                if count_data == 0:
+                                    variable1 = p.string #if the count is 0 then retrieve the information and put it in variable 1
+                                    count_data += 1
+                                elif count_data != 0: #if the count is not 0 then retrieve the information and put it in variable 2
+                                    variable2 = p.string
+                                    count_data += 1
+            if count_data == 2:                     #if count is 2 then reset the count
+                count_data = 0
+                bibliography_dict[variable1] = variable2  #store variables into the dictionary with key and value
+                variable1 = ""
+                variable2 = ""
 
 
 def write_csv(dict_to_write, csv):
@@ -130,47 +195,38 @@ def write_csv(dict_to_write, csv):
         csvfile.close()
 
 
-def bibliography_pairings(web_page):               #pairing the information together that is in each row of the bibliography table
-    rows = web_page.tbody
-    count_data = 0
-    bibliography_dict = {}
-    variable1 = ""                 #variables to store the informmation of the data in the rows
-    variable2 = ""
-    for row in rows.children:            #gets the child tag of table row
-        if row != "\n":
-            for table_data in row.children:     #gets the child tag of table data
-                if table_data != "\n":
-                    for p in table_data.children: #gets the information/tags in the tag p
-                        if p != "\n":
-                            if count_data == 0:
-                                variable1 = p.string #if the count is 0 then retrieve the information and put it in variable 1
-                                count_data += 1
-                            elif count_data != 0: #if the count is not 0 then retrieve the information and put it in variable 2
-                                variable2 = p.string
-                                count_data += 1
-        if count_data == 2:                     #if count is 2 then reset the count
-            count_data = 0
-            bibliography_dict[variable1] = variable2  #store variables into the dictionary with key and value
-            variable1 = ""
-            variable2 = ""
-    print(bibliography_dict)
-
 def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
     path = "/Users/bereacollege/Documents/internship/PMSS_Scraper/html/"
-    file = "EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.html"
-    f = open(path + file)
-    web_page = BeautifulSoup(f, 'html.parser')
-    pmss_images = image_info(web_page)
-    captions = find_captions(web_page)
-    image_caption_linking(captions, pmss_images)
+    onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
+    pmss_images = {}
+    pmss_pages = []
+    for file in onlyfiles:
+        if file != ".DS_Store":
+            current_page = Page()
+            f = open(path + file)
+            web_page = BeautifulSoup(f, 'html.parser')
+            pmss_images[file] = image_info(web_page)
+            captions = find_captions(web_page)
+            image_caption_linking(captions, pmss_images[file])
+            current_page.images = pmss_images
+            # current_page.bibliography = bibliography_pairings(web_page)
+            current_page.html = file
+            pmss_pages.append(copy.copy(current_page))
+            find_transcriptions(web_page)
+    # for file in onlyfiles:
+    #     if file != ".DS_Store":
+    #         for image in pmss_images[file].keys():
+    #             # print(image + ": ")
+    #             # pmss_images[file][image].list_images()
+    #             print(pmss_images[file][image])
+    #
+    # # write_csv(pmss_images)
+    # bibliography_pairings(web_page)
 
-    # for image in pmss_images.keys():
-    #     print(image + ": ")
-    #     pmss_images[image].list_images()
-    #     print()
 
-    # write_csv(pmss_images)
-    bibliography_pairings(web_page)
+
+
+
 if __name__ == "__main__":
     main()
