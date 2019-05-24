@@ -29,6 +29,7 @@ class Image:
         if self.file_name.count(resolution) == 0:
             return
         else:
+
             final_file_pieces = []
             ext = self.file_name[-4:]  # Assuming the extension is 3 characters long save the last few characters
             if "." not in ext:  # If the "." is not in the extension, the extension is 4 characters long
