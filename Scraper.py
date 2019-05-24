@@ -59,7 +59,6 @@ def image_file_path_info(tag, img):
     year = file_split[-3]
     month = file_split[-2]
     img.upload_date = month + "/" + year
-    img.file_name = file_split[-1]
 
 
 def image_resolution(tag, img):
