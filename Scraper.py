@@ -110,7 +110,7 @@ def image_caption_linking(captions_dict, images_dict):
                 images_dict[image].caption = captions_dict[caption].caption
 
 
-def find_transcriptions(page_soup):
+def find_transcriptions(page_soup, img_dict):
     """""
     Finds all the text that could possibly be a transcription
     :param page_soup: Beautiful Soup object
@@ -119,34 +119,56 @@ def find_transcriptions(page_soup):
     content = ""
     transcriptions_dict = {}               #dictionary to store transcriptions
     row_transcript = page_soup.find_all("div")    #finds all the tags that hold div
-    tag = ''
+    wanted_tags = ["p", "h1", "h2", "h3", "h4", "h5", "h6"]
+    recording = False
+    current_file = ""
     for div in row_transcript:
         if div.get("class"):
             if div.get("class")[0] == "entry-content": #content will hold the correct tag
                 content = div
+                break
     for tag in content.children:   #trying to reach the lowest level of the tag looks from children of current tag
-        if tag.name == "p":
-            temp_tag = copy.copy(tag)           #we want information stored in p tag
-            if tag.string:
-                lowest_level = True
-            else:
-                lowest_level = False
-            while lowest_level != True:
-                temp_tag = temp_tag.contents[0]
-                if tag.string:
-                    lowest_level = True
+        if tag.name in wanted_tags:
+            temp_tag = copy.copy(tag)  # we want information stored in p tag
+            # if not tag.string:
+
+            for each_tag in tag.children:
+                if each_tag.string:
+                    if "transcription" in each_tag.string.lower():
+                        recording = True
+                    elif ".jpg" in each_tag.string:
+                        split_name = each_tag.string.split("[")
+                        current_file = split_name[-1][:-1]
+                    elif each_tag.name == "span" or each_tag.name == "p":
+                        if recording and current_file != "":
+                            s = str(each_tag.string)
+                            img_dict[current_file].transcription += s
+                    elif each_tag.name == "div":
+                        pass
+                    else:
+                        if each_tag.previous_sibling:
+                            previous_tag = each_tag.previous_sibling.name
+                        else:
+                            previous_tag = None
+                        if each_tag.next_sibling:
+                            next_tag = each_tag.next_sibling.name
+                        else:
+                            next_tag = None
+                        if previous_tag == "span" or next_tag == "span":
+                            if recording and current_file != "":
+                                s = str(each_tag.string)
+                                img_dict[current_file].transcription += s
                 else:
-                    lowest_level = False
+                    if recording and current_file != "":
+                        s = str(each_tag.string)
+                        img_dict[current_file].transcription += s
 
 
-            tag.string
-            temp = Transcription()
-            temp.transcript_link = tag.get_text()
-            transcriptions_dict[] = temp.transcript_link
-        print(page_soup.p)
-        print(row_transcript.find_all("transcription"))
-            # for transcribe in page_soup.find_all("jpg")
-        print(transcriptions_dict)
+    for image in img_dict.keys():
+        print(img_dict[image].transcription)
+
+    # print(img_dict)
+        # print(transcriptions_dict)
 
 # def image_transcription_linking(transcriptions_dict,ima )
 
@@ -199,21 +221,34 @@ def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
     path = "/Users/bereacollege/Documents/internship/PMSS_Scraper/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
+    file= "ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
     pmss_images = {}
     pmss_pages = []
-    for file in onlyfiles:
-        if file != ".DS_Store":
-            current_page = Page()
-            f = open(path + file)
-            web_page = BeautifulSoup(f, 'html.parser')
-            pmss_images[file] = image_info(web_page)
-            captions = find_captions(web_page)
-            image_caption_linking(captions, pmss_images[file])
-            current_page.images = pmss_images
-            # current_page.bibliography = bibliography_pairings(web_page)
-            current_page.html = file
-            pmss_pages.append(copy.copy(current_page))
-            find_transcriptions(web_page)
+    current_page = Page()
+    f = open(path + file)
+    web_page = BeautifulSoup(f, 'html.parser')
+    pmss_images[file] = image_info(web_page)
+    captions = find_captions(web_page)
+    image_caption_linking(captions, pmss_images[file])
+    current_page.images = pmss_images
+    # current_page.bibliography = bibliography_pairings(web_page)
+    current_page.html = file
+    pmss_pages.append(copy.copy(current_page))
+    find_transcriptions(web_page, pmss_images['ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm'])
+
+    # for file in onlyfiles:
+    #     if file != ".DS_Store":
+    #         current_page = Page()
+    #         f = open(path + file)
+    #         web_page = BeautifulSoup(f, 'html.parser')
+    #         pmss_images[file] = image_info(web_page)
+    #         captions = find_captions(web_page)
+    #         image_caption_linking(captions, pmss_images[file])
+    #         current_page.images = pmss_images
+    #         # current_page.bibliography = bibliography_pairings(web_page)
+    #         current_page.html = file
+    #         pmss_pages.append(copy.copy(current_page))
+    #         find_transcriptions(web_page)
     # for file in onlyfiles:
     #     if file != ".DS_Store":
     #         for image in pmss_images[file].keys():
@@ -223,9 +258,6 @@ def main():
     #
     # # write_csv(pmss_images)
     # bibliography_pairings(web_page)
-
-
-
 
 
 if __name__ == "__main__":
