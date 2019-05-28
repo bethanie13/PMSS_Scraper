@@ -4,10 +4,11 @@ from Caption import Caption
 from Transcription import Transcription
 import copy
 from Page import Page
-
 import csv
 from os import listdir
 from os.path import isfile, join
+from Page import Page
+
 
 
 def image_info(page_soup):
@@ -117,7 +118,6 @@ def find_transcriptions(page_soup, img_dict):
     :return: None
     """
     content = ""
-    transcriptions_dict = {}               #dictionary to store transcriptions
     row_transcript = page_soup.find_all("div")    #finds all the tags that hold div
     wanted_tags = ["p", "h1", "h2", "h3", "h4", "h5", "h6"]
     recording = False
@@ -166,40 +166,8 @@ def find_transcriptions(page_soup, img_dict):
 
     for image in img_dict.keys():
         print(img_dict[image].transcription)
-
-    # print(img_dict)
-        # print(transcriptions_dict)
-
-# def image_transcription_linking(transcriptions_dict,ima )
-
-
-def bibliography_pairings(page_soup):
-    rows = page_soup.tbody
-    count_data = 0
-    bibliography_dict = {}
-    variable1 = ""                 #variables to store the informmation of the data in the rows
-    variable2 = ""
-    if rows:
-
-        for row in rows.children:            #gets the child tag of table row
-            if row != "\n":
-                for table_data in row.children:     #gets the child tag of table data
-                    if table_data != "\n":
-                        for p in table_data.children: #gets the information/tags in the tag p
-                            if p != "\n":
-                                if count_data == 0:
-                                    variable1 = p.string #if the count is 0 then retrieve the information and put it in variable 1
-                                    count_data += 1
-                                elif count_data != 0: #if the count is not 0 then retrieve the information and put it in variable 2
-                                    variable2 = p.string
-                                    count_data += 1
-            if count_data == 2:                     #if count is 2 then reset the count
-                count_data = 0
-                bibliography_dict[variable1] = variable2  #store variables into the dictionary with key and value
-                variable1 = ""
-                variable2 = ""
-
-
+        
+                
 def write_csv(dict_to_write, csv):
     """
     Uses the csv library to write .csv files containing the image's information
@@ -216,7 +184,34 @@ def write_csv(dict_to_write, csv):
         file_writer.writerows(csv_data)
         csvfile.close()
 
+        
+def bibliography_pairings(page_soup):
+    rows = page_soup.tbody
+    count_data = 0
+    bibliography_dict = {}
+    title = ""                 # variables to store the informmation of the data in the rows
+    info = ""
+    for row in rows.children:            # gets the child tag of table row
+        if row != "\n":
+            for table_data in row.children:     # gets the child tag of table data
+                if table_data != "\n":
+                    for p in table_data.children:  # gets the information/tags in the tag p
+                        if p != "\n":
+                            # store the information two at a time
+                            if count_data == 0:
+                                title = p.string  # if the count is 0 then retrieve the information and put it in variable 1
+                                count_data += 1
+                            elif count_data != 0: # if the count is not 0 then retrieve the information and put it in variable 2
+                                info = p.string
+                                count_data += 1
+        if count_data == 2:                     # if count is 2 then reset the count
+            count_data = 0
+            bibliography_dict[title] = info  # store variables into the dictionary with key and value
+            title = ""
+            info = ""
+    return bibliography_dict
 
+  
 def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
     path = "/Users/bereacollege/Documents/internship/PMSS_Scraper/html/"
@@ -258,7 +253,7 @@ def main():
     #
     # # write_csv(pmss_images)
     # bibliography_pairings(web_page)
-
+    # print(pmss_pages[0].html)
 
 if __name__ == "__main__":
     main()
