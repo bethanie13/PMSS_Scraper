@@ -60,4 +60,3 @@ class Image:
         print("Resolution: " + str(self.image_resized_resolution[0]) + "x" + str(self.image_resized_resolution[1]))
         if self.caption != "":
             print("Caption: " + self.caption)
-
