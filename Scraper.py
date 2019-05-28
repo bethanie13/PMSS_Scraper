@@ -127,7 +127,13 @@ def find_transcriptions(page_soup, img_dict):
             if div.get("class")[0] == "entry-content":  # content will hold the correct tag
                 content = div
                 break
+
     for tag in content.children:  # trying to reach the lowest level of the tag looks from children of current tag
+        if tag.name == "hr":   # tag found at end of page; stops recording
+            recording = False
+        if tag == "\n":      # new line character used to find where spaces should be added within text
+            if recording and current_file != "":
+                img_dict[current_file].transcription += " "  # associate image with the transcript
         if tag.name in wanted_tags:
             for each_tag in tag.children:
                 if each_tag.string:
@@ -141,7 +147,7 @@ def find_transcriptions(page_soup, img_dict):
                             img_dict[current_file].transcription += str(each_tag.string)  # associate image with the transcript
                     elif each_tag.name == "div":   # we do not care about other div tags
                         pass
-                    elif each_tag.parent.name == "p":
+                    elif each_tag.parent.name == "p" and each_tag.name != "div":
                         if recording and current_file != "":
                             img_dict[current_file].transcription += str(each_tag.string)  # associate image with the transcript
                     else:  # if we reach any other tag
@@ -157,7 +163,7 @@ def find_transcriptions(page_soup, img_dict):
                             if recording and current_file != "":
                                 img_dict[current_file].transcription += str(each_tag.string)  # associate image with the transcript
                 else:
-                    if recording and current_file != "":
+                    if recording and current_file != "" and each_tag.name != "div":
                         img_dict[current_file].transcription += str(each_tag.string)  # associate image with the transcript
 
     for image in img_dict.keys():
