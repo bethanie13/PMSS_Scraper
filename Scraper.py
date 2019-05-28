@@ -10,7 +10,6 @@ from os.path import isfile, join
 from Page import Page
 
 
-
 def image_info(page_soup):
     """
     Finds all images on the page and collects as much information as it can
@@ -115,37 +114,37 @@ def find_transcriptions(page_soup, img_dict):
     """""
     Finds all the text that could possibly be a transcription
     :param page_soup: Beautiful Soup object
+    :param img_dict: Dictionary for the images
     :return: None
     """
     content = ""
-    row_transcript = page_soup.find_all("div")    #finds all the tags that hold div
-    wanted_tags = ["p", "h1", "h2", "h3", "h4", "h5", "h6"]
-    recording = False
+    row_transcript = page_soup.find_all("div")  # finds all the tags that hold div
+    wanted_tags = ["p", "h1", "h2", "h3", "h4", "h5", "h6"]  # these are the only tags we are concerned about
+    recording = False  # checks to see if we are in transcript
     current_file = ""
-    for div in row_transcript:
+    for div in row_transcript:  # look specifically for the div that contains the entry-content because this will hold our transcripts
         if div.get("class"):
-            if div.get("class")[0] == "entry-content": #content will hold the correct tag
+            if div.get("class")[0] == "entry-content":  # content will hold the correct tag
                 content = div
                 break
-    for tag in content.children:   #trying to reach the lowest level of the tag looks from children of current tag
+    for tag in content.children:  # trying to reach the lowest level of the tag looks from children of current tag
         if tag.name in wanted_tags:
-            temp_tag = copy.copy(tag)  # we want information stored in p tag
-            # if not tag.string:
-
             for each_tag in tag.children:
                 if each_tag.string:
-                    if "transcription" in each_tag.string.lower():
+                    if "transcription" in each_tag.string.lower():   # for each tag we look for the string called transcription
                         recording = True
                     elif ".jpg" in each_tag.string:
-                        split_name = each_tag.string.split("[")
+                        split_name = each_tag.string.split("[")  # if .jpg found then we will then extract file name
                         current_file = split_name[-1][:-1]
-                    elif each_tag.name == "span" or each_tag.name == "p":
+                    elif each_tag.name == "span" or each_tag.name == "p":  # looks for tags that likely contain a transcript
                         if recording and current_file != "":
-                            s = str(each_tag.string)
-                            img_dict[current_file].transcription += s
-                    elif each_tag.name == "div":
+                            img_dict[current_file].transcription += str(each_tag.string)  # associate image with the transcript
+                    elif each_tag.name == "div":   # we do not care about other div tags
                         pass
-                    else:
+                    elif each_tag.parent.name == "p":
+                        if recording and current_file != "":
+                            img_dict[current_file].transcription += str(each_tag.string)  # associate image with the transcript
+                    else:  # if we reach any other tag
                         if each_tag.previous_sibling:
                             previous_tag = each_tag.previous_sibling.name
                         else:
@@ -154,20 +153,49 @@ def find_transcriptions(page_soup, img_dict):
                             next_tag = each_tag.next_sibling.name
                         else:
                             next_tag = None
-                        if previous_tag == "span" or next_tag == "span":
+                        if previous_tag == "span" or next_tag == "span":  # if the tag is near a span tag we save that text
                             if recording and current_file != "":
-                                s = str(each_tag.string)
-                                img_dict[current_file].transcription += s
+                                img_dict[current_file].transcription += str(each_tag.string)  # associate image with the transcript
                 else:
                     if recording and current_file != "":
-                        s = str(each_tag.string)
-                        img_dict[current_file].transcription += s
-
+                        img_dict[current_file].transcription += str(each_tag.string)  # associate image with the transcript
 
     for image in img_dict.keys():
-        print(img_dict[image].transcription)
-        
-                
+        print(img_dict[image])
+
+
+def bibliography_pairings(page_soup):
+    """
+    Pairs the information in the table of the bibliography together with the appropriate data.
+    :param page_soup: Beautiful Soup Object
+    :return: None
+    """
+    rows = page_soup.tbody
+    count_data = 0
+    bibliography_dict = {}
+    title = ""  # variables to store the information of the data in the rows
+    info = ""
+    for row in rows.children:  # gets the child tag of table row
+        if row != "\n":
+            for table_data in row.children:  # gets the child tag of table data
+                if table_data != "\n":
+                    for p in table_data.children:  # gets the information/tags in the tag p
+                        if p != "\n":
+                            # store the information two at a time
+                            if count_data == 0:
+                                title = p.string  # if the count is 0 then retrieve the information and put it in variable 1
+                                count_data += 1
+                            elif count_data != 0:  # if the count is not 0 then retrieve the information and put it in variable 2
+                                info = p.string
+                                count_data += 1
+        if count_data == 2:  # if count is 2 then reset the count
+            count_data = 0
+            bibliography_dict[title] = info  # store variables into the dictionary with key and value
+            title = ""
+            info = ""
+    return bibliography_dict
+
+
 def write_csv(dict_to_write, csv):
     """
     Uses the csv library to write .csv files containing the image's information
@@ -184,76 +212,51 @@ def write_csv(dict_to_write, csv):
         file_writer.writerows(csv_data)
         csvfile.close()
 
-        
-def bibliography_pairings(page_soup):
-    rows = page_soup.tbody
-    count_data = 0
-    bibliography_dict = {}
-    title = ""                 # variables to store the informmation of the data in the rows
-    info = ""
-    for row in rows.children:            # gets the child tag of table row
-        if row != "\n":
-            for table_data in row.children:     # gets the child tag of table data
-                if table_data != "\n":
-                    for p in table_data.children:  # gets the information/tags in the tag p
-                        if p != "\n":
-                            # store the information two at a time
-                            if count_data == 0:
-                                title = p.string  # if the count is 0 then retrieve the information and put it in variable 1
-                                count_data += 1
-                            elif count_data != 0: # if the count is not 0 then retrieve the information and put it in variable 2
-                                info = p.string
-                                count_data += 1
-        if count_data == 2:                     # if count is 2 then reset the count
-            count_data = 0
-            bibliography_dict[title] = info  # store variables into the dictionary with key and value
-            title = ""
-            info = ""
-    return bibliography_dict
 
-  
 def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
     path = "/Users/bereacollege/Documents/internship/PMSS_Scraper/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
-    file= "ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # file = "ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
     pmss_images = {}
     pmss_pages = []
-    current_page = Page()
-    f = open(path + file)
-    web_page = BeautifulSoup(f, 'html.parser')
-    pmss_images[file] = image_info(web_page)
-    captions = find_captions(web_page)
-    image_caption_linking(captions, pmss_images[file])
-    current_page.images = pmss_images
-    # current_page.bibliography = bibliography_pairings(web_page)
-    current_page.html = file
-    pmss_pages.append(copy.copy(current_page))
-    find_transcriptions(web_page, pmss_images['ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm'])
+    # current_page = Page()
+    # f = open(path + file)
+    # web_page = BeautifulSoup(f, 'html.parser')
+    # pmss_images[file] = image_info(web_page)
+    # captions = find_captions(web_page)
+    # image_caption_linking(captions, pmss_images[file])
+    # current_page.images = pmss_images
+    # # current_page.bibliography = bibliography_pairings(web_page)
+    # current_page.html = file
+    # pmss_pages.append(copy.copy(current_page))
+    # find_transcriptions(web_page, pmss_images[
+    #     'ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm'])
 
-    # for file in onlyfiles:
-    #     if file != ".DS_Store":
-    #         current_page = Page()
-    #         f = open(path + file)
-    #         web_page = BeautifulSoup(f, 'html.parser')
-    #         pmss_images[file] = image_info(web_page)
-    #         captions = find_captions(web_page)
-    #         image_caption_linking(captions, pmss_images[file])
-    #         current_page.images = pmss_images
-    #         # current_page.bibliography = bibliography_pairings(web_page)
-    #         current_page.html = file
-    #         pmss_pages.append(copy.copy(current_page))
-    #         find_transcriptions(web_page)
-    # for file in onlyfiles:
-    #     if file != ".DS_Store":
-    #         for image in pmss_images[file].keys():
-    #             # print(image + ": ")
-    #             # pmss_images[file][image].list_images()
-    #             print(pmss_images[file][image])
-    #
-    # # write_csv(pmss_images)
-    # bibliography_pairings(web_page)
-    # print(pmss_pages[0].html)
+    for file in onlyfiles:
+        if file != ".DS_Store":
+            current_page = Page()
+            f = open(path + file)
+            web_page = BeautifulSoup(f, 'html.parser')
+            pmss_images[file] = image_info(web_page)
+            captions = find_captions(web_page)
+            image_caption_linking(captions, pmss_images[file])
+            current_page.images = pmss_images
+            # current_page.bibliography = bibliography_pairings(web_page)
+            current_page.html = file
+            pmss_pages.append(copy.copy(current_page))
+            find_transcriptions(web_page, pmss_images[file])
+    for file in onlyfiles:
+        if file != ".DS_Store":
+            for image in pmss_images[file].keys():
+                # print(image + ": ")
+                # pmss_images[file][image].list_images()
+                print(pmss_images[file][image])
+
+    # write_csv(pmss_images)
+    bibliography_pairings(web_page)
+    print(pmss_pages[0].html)
+
 
 if __name__ == "__main__":
     main()
