@@ -25,21 +25,32 @@ class Image:
         :return: None
         """
         final_file_pieces = []
+        check = []
+        resolution = ""
         ext = self.file_name[-4:]  # Assuming the extension is 3 characters long save the last few characters
         if "." not in ext:  # If the "." is not in the extension, the extension is 4 characters long
             ext = self.file_name[-5:]
         self.file_name = self.file_name[:-len(ext)]
         split_name = self.file_name.split("-")
-        for i in range(len(split_name)-1):
-            print(split_name[i])
-            final_file_pieces.append(split_name[i])
-        final_file = ""
+        for sub_piece in split_name[-1].split("x"):
+            try:
+                check.append(int(sub_piece))
+                if len(check) == 2:
+                    resolution = str(check[0]) + "x" + str(check[1])
+                    break
+            except ValueError:
+                pass
+
+        for piece in split_name:
+            if piece != resolution:
+                final_file_pieces.append(piece)
+        final_file_name = ""
         for i in range(len(final_file_pieces)):
             if i == len(final_file_pieces)-1:
-                final_file += final_file_pieces[i]
+                final_file_name += final_file_pieces[i]
             else:
-                final_file += final_file_pieces[i] + "-"
-        self.file_name = final_file + ext
+                final_file_name += final_file_pieces[i] + "-"
+        self.file_name = final_file_name + ext
 
     def list_images(self):
         """
