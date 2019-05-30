@@ -181,8 +181,8 @@ def find_transcriptions(page_soup, img_dict):
                 break
 
     for tag in content.children:  # trying to reach the lowest level of the tag looks from children of current tag
-        if tag.name == "hr":   # tag found at end of page; stops recording
-            recording = False
+        # if tag.name == "hr":   # tag found at end of page; stops recording
+        #     recording = False
         if tag == "\n":      # new line character used to find where spaces should be added within text
             if recording and current_file != "":
                 if len(img_dict[current_file].transcription) != 0:
@@ -190,6 +190,23 @@ def find_transcriptions(page_soup, img_dict):
                         img_dict[current_file].transcription += "\n"
                     else:
                         img_dict[current_file].transcription += " "  # associate image with the transcript
+        if tag.name == "p":
+            if tag.string:
+                if len(tag.string) <= 10:
+                    page_source = ""
+                    for word in tag.string.split():
+                        if word.lower() == "page":
+                           page_source += word
+                        else:
+                            try:
+                                int(word)
+                                page_source += word
+                            except ValueError:
+                                pass
+                    if len(page_source) > 2:
+                        img_dict[page_source] = Image()
+                        current_file = page_source
+
         if tag.name in wanted_tags:
             for main_tags_child in tag.children:
                 if main_tags_child.string:
@@ -197,10 +214,15 @@ def find_transcriptions(page_soup, img_dict):
                             main_tags_child.string.lower():   # for each tag we look for the string called transcription
                         recording = True
 
+
                     elif ".jpg" in main_tags_child.string:
-                        split_name = main_tags_child.string.split("[")  # if .jpg found then we will then extract file name
-                        current_file = split_name[-1][:-5]
-                        image_index += 1
+                        if recording:
+                            split_name = main_tags_child.string.split("[")  # if .jpg found then we will then extract file name
+                            current_file = split_name[-1][:-5]
+                            image_index += 1
+                            if current_file not in img_dict:
+                                img_dict[current_file] = Image()
+                                img_dict[current_file].file_name = "Outlier"
 
                     elif "[" in main_tags_child.string:  # If we find a bracket, check if it is a filename
                         # a list of keys in our image dictionary
@@ -210,9 +232,11 @@ def find_transcriptions(page_soup, img_dict):
                         for section in main_tags_child.string.split("["):  # split the text by the open bracket
                             # split the text by the closed bracket so all that's left is just the text
                             for subsection in section.split("]"):
-                                if len(keys) != 0:  # If we have keys in our dictionary
+                                if len(keys) != 0 and image_index > len(keys):  # If we have keys in our dictionary
                                     # if our comparison text is at least80% similar to our key,
                                     # assume they are the same
+                                    print(subsection.lower())
+                                    print(keys[image_index])
                                     if levenshtein_ratio_and_distance(subsection.lower(), keys[image_index], True) >= .80:
                                         current_file = keys[image_index]  # update the current file
                                         image_index += 1  # increase the image index
@@ -248,6 +272,13 @@ def find_transcriptions(page_soup, img_dict):
 
 
 def record_transcript(img_dict, recording_state, current_file, tag):
+    """
+    :param img_dict: Dictionary containing images for a page
+    :param recording_state: boolean for if we are recording a transcript or not
+    :param current_file: Holds a string for transcription to ensure it goes to correct position in dictionary
+    :param tag: Beautiful Soup Object
+    :return: None
+    """
     if recording_state and current_file != "" and tag.name != "div":
         img_dict[current_file].transcription += str(
             tag.string)  # associate image with the transcript
