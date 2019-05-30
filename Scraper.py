@@ -307,6 +307,7 @@ def bibliography_pairings(page_soup):
 def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
     # path = "/home/schmidtt/PycharmProjects/PMSS_Scraper/html/"
+    path = "/Users/bereacollege/Documents/internship/PMSS_Scraper/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     # file = "ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
     pmss_images = {}
