@@ -185,7 +185,11 @@ def find_transcriptions(page_soup, img_dict):
             recording = False
         if tag == "\n":      # new line character used to find where spaces should be added within text
             if recording and current_file != "":
-                img_dict[current_file].transcription += " "  # associate image with the transcript
+                if len(img_dict[current_file].transcription) != 0:
+                    if img_dict[current_file].transcription[-1] == " ":
+                        img_dict[current_file].transcription += "\n"
+                    else:
+                        img_dict[current_file].transcription += " "  # associate image with the transcript
         if tag.name in wanted_tags:
             for main_tags_child in tag.children:
                 if main_tags_child.string:
@@ -198,33 +202,32 @@ def find_transcriptions(page_soup, img_dict):
                         current_file = split_name[-1][:-5]
                         image_index += 1
 
-                    elif "[" in main_tags_child.string:
+                    elif "[" in main_tags_child.string:  # If we find a bracket, check if it is a filename
+                        # a list of keys in our image dictionary
                         keys = list(img_dict)
-                        for section in main_tags_child.string.split("["):
+                        # We assume what we are looking at is a transcript unless we change the filename
+                        part_of_transcription = True
+                        for section in main_tags_child.string.split("["):  # split the text by the open bracket
+                            # split the text by the closed bracket so all that's left is just the text
                             for subsection in section.split("]"):
-                                if len(keys) != 0:
+                                if len(keys) != 0:  # If we have keys in our dictionary
+                                    # if our comparison text is at least80% similar to our key,
+                                    # assume they are the same
                                     if levenshtein_ratio_and_distance(subsection.lower(), keys[image_index], True) >= .80:
-                                        current_file = keys[image_index]
-                                        image_index += 1
+                                        current_file = keys[image_index]  # update the current file
+                                        image_index += 1  # increase the image index
+                                        part_of_transcription = False  # since we determined it isa file name, this is now False
+                        if part_of_transcription:  # If the text was deemed to not be a file
+                            record_transcript(img_dict, recording, current_file, main_tags_child)  # record the text
 
                     elif main_tags_child.name == "span" or \
                             main_tags_child.name == "p":  # looks for tags that likely contain a transcript
-                        if recording and current_file != "":
-                            if main_tags_child.children:
-                                for grandchild in main_tags_child.children:
-                                    img_dict[current_file].transcription += str(
-                                        grandchild.string)  # associate image with the transcript
-                            else:
-                                img_dict[current_file].transcription += str(
-                                    main_tags_child.string)  # associate image with the transcript
-
+                        record_transcript(img_dict, recording, current_file, main_tags_child)
                     elif main_tags_child.name == "div":   # we do not care about other div tags
                         pass
 
                     elif main_tags_child.parent.name == "p" and main_tags_child.name != "div":
-                        if recording and current_file != "":
-                            img_dict[current_file].transcription += str(
-                                main_tags_child.string)  # associate image with the transcript
+                        record_transcript(img_dict, recording, current_file, main_tags_child)
 
                     else:  # if we reach any other tag
                         if main_tags_child.previous_sibling:
@@ -237,14 +240,17 @@ def find_transcriptions(page_soup, img_dict):
                             next_tag = None
                         if previous_tag == "span" or \
                                 next_tag == "span":  # if the tag is near a span tag we save that text
-                            if recording and current_file != "":
-                                img_dict[current_file].transcription += str(
-                                    main_tags_child.string)  # associate image with the transcript
+                            record_transcript(img_dict, recording, current_file, main_tags_child)
 
                 else:
-                    if recording and current_file != "" and main_tags_child.name != "div":
-                        img_dict[current_file].transcription += str(
-                            main_tags_child.string)  # associate image with the transcript
+                    for grandchild in main_tags_child.children:
+                        record_transcript(img_dict, recording, current_file, grandchild)
+
+
+def record_transcript(img_dict, recording_state, current_file, tag):
+    if recording_state and current_file != "" and tag.name != "div":
+        img_dict[current_file].transcription += str(
+            tag.string)  # associate image with the transcript
 
 
 def write_csv(dict_to_write, csv):
