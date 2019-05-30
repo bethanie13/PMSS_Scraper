@@ -6,6 +6,59 @@ import csv
 from os import listdir
 from os.path import isfile, join
 from Page import Page
+import numpy as np
+
+
+def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
+    """
+    levenshtein_ratio_and_distance:
+    Calculates levenshtein distance between two strings.
+    If ratio_calc = True, the function computes the
+    levenshtein distance ratio of similarity between two strings
+    For all i and j, distance[i,j] will contain the Levenshtein
+    distance between the first i characters of s and the
+    first j characters of t
+    """
+    # Initialize matrix of zeros
+    rows = len(s)+1
+    cols = len(t)+1
+    distance = np.zeros((rows,cols),dtype = int)
+    row = 0
+    col = 0
+
+    if s == "" or t == "":
+        return 0
+
+    # Populate matrix of zeros with the indeces of each character of both strings
+    for i in range(1, rows):
+        for k in range(1,cols):
+            distance[i][0] = i
+            distance[0][k] = k
+
+    # Iterate over the matrix to compute the cost of deletions,insertions and/or substitutions
+    for col in range(1, cols):
+        for row in range(1, rows):
+            if s[row-1] == t[col-1]:
+                cost = 0 # If the characters are the same in the two strings in a given position [i,j] then the cost is 0
+            else:
+                # In order to align the results with those of the Python Levenshtein package, if we choose to calculate the ratio
+                # the cost of a substitution is 2. If we calculate just distance, then the cost of a substitution is 1.
+                if ratio_calc == True:
+                    cost = 2
+                else:
+                    cost = 1
+            distance[row][col] = min(distance[row-1][col] + 1,      # Cost of deletions
+                                 distance[row][col-1] + 1,          # Cost of insertions
+                                 distance[row-1][col-1] + cost)     # Cost of substitutions
+    if ratio_calc == True:
+        # Computation of the Levenshtein Distance Ratio
+        Ratio = ((len(s)+len(t)) - distance[row][col]) / (len(s)+len(t))
+        return Ratio
+    else:
+        # print(distance) # Uncomment if you want to see the matrix showing how the algorithm computes the cost of deletions,
+        # insertions and/or substitutions
+        # This is the minimum number of edits needed to convert string a to string b
+        return "The strings are {} edits away".format(distance[row][col])
 
 
 def image_info(page_soup):
@@ -32,7 +85,7 @@ def image_info(page_soup):
 
         if temp.file_name != "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg":  # Ignore the header image
             # Copy the image to a dictionary
-            images_dict[temp.file_name[:-len(temp.file_name.split(".")[-1])-1]] = copy.copy(temp)
+            images_dict[temp.file_name[:-len(temp.file_name.split(".")[-1])-1].lower()] = copy.copy(temp)
     return images_dict
 
 
@@ -120,6 +173,7 @@ def find_transcriptions(page_soup, img_dict):
     wanted_tags = ["p", "h1", "h2", "h3", "h4", "h5", "h6"]  # these are the only tags we are concerned about
     recording = False  # checks to see if we are in transcript
     current_file = ""
+    image_index = 0
     for div in row_transcript:  # look specifically for the div that contains
         if div.get("class"):    # the entry-content because this will hold our transcripts
             if div.get("class")[0] == "entry-content":  # content will hold the correct tag
@@ -133,46 +187,64 @@ def find_transcriptions(page_soup, img_dict):
             if recording and current_file != "":
                 img_dict[current_file].transcription += " "  # associate image with the transcript
         if tag.name in wanted_tags:
-            for each_tag in tag.children:
-                if each_tag.string:
+            for main_tags_child in tag.children:
+                if main_tags_child.string:
                     if "transcription" in \
-                            each_tag.string.lower():   # for each tag we look for the string called transcription
+                            main_tags_child.string.lower():   # for each tag we look for the string called transcription
                         recording = True
-                    elif ".jpg" in each_tag.string:
-                        split_name = each_tag.string.split("[")  # if .jpg found then we will then extract file name
-                        current_file = split_name[-1][:-1]
-                    elif each_tag.name == "span" or \
-                            each_tag.name == "p":  # looks for tags that likely contain a transcript
+
+                    elif ".jpg" in main_tags_child.string:
+                        split_name = main_tags_child.string.split("[")  # if .jpg found then we will then extract file name
+                        current_file = split_name[-1][:-5]
+                        image_index += 1
+
+                    elif "[" in main_tags_child.string:
+                        keys = list(img_dict)
+                        for section in main_tags_child.string.split("["):
+                            for subsection in section.split("]"):
+                                if len(keys) != 0:
+                                    if levenshtein_ratio_and_distance(subsection.lower(), keys[image_index], True) >= .80:
+                                        current_file = keys[image_index]
+                                        image_index += 1
+
+                    elif main_tags_child.name == "span" or \
+                            main_tags_child.name == "p":  # looks for tags that likely contain a transcript
                         if recording and current_file != "":
-                            img_dict[current_file].transcription += str(
-                                each_tag.string)  # associate image with the transcript
-                    elif each_tag.name == "div":   # we do not care about other div tags
+                            if main_tags_child.children:
+                                for grandchild in main_tags_child.children:
+                                    img_dict[current_file].transcription += str(
+                                        grandchild.string)  # associate image with the transcript
+                            else:
+                                img_dict[current_file].transcription += str(
+                                    main_tags_child.string)  # associate image with the transcript
+
+                    elif main_tags_child.name == "div":   # we do not care about other div tags
                         pass
-                    elif each_tag.parent.name == "p" and each_tag.name != "div":
+
+                    elif main_tags_child.parent.name == "p" and main_tags_child.name != "div":
                         if recording and current_file != "":
                             img_dict[current_file].transcription += str(
-                                each_tag.string)  # associate image with the transcript
+                                main_tags_child.string)  # associate image with the transcript
+
                     else:  # if we reach any other tag
-                        if each_tag.previous_sibling:
-                            previous_tag = each_tag.previous_sibling.name
+                        if main_tags_child.previous_sibling:
+                            previous_tag = main_tags_child.previous_sibling.name
                         else:
                             previous_tag = None
-                        if each_tag.next_sibling:
-                            next_tag = each_tag.next_sibling.name
+                        if main_tags_child.next_sibling:
+                            next_tag = main_tags_child.next_sibling.name
                         else:
                             next_tag = None
                         if previous_tag == "span" or \
                                 next_tag == "span":  # if the tag is near a span tag we save that text
                             if recording and current_file != "":
                                 img_dict[current_file].transcription += str(
-                                    each_tag.string)  # associate image with the transcript
-                else:
-                    if recording and current_file != "" and each_tag.name != "div":
-                        img_dict[current_file].transcription += str(
-                            each_tag.string)  # associate image with the transcript
+                                    main_tags_child.string)  # associate image with the transcript
 
-    for image in img_dict.keys():
-        print(img_dict[image])
+                else:
+                    if recording and current_file != "" and main_tags_child.name != "div":
+                        img_dict[current_file].transcription += str(
+                            main_tags_child.string)  # associate image with the transcript
 
 
 def write_csv(dict_to_write, csv):
@@ -246,7 +318,7 @@ def main():
             # current_page.bibliography = bibliography_pairings(web_page)
             current_page.html = file
             pmss_pages.append(copy.copy(current_page))
-            # find_transcriptions(web_page, pmss_images[file])
+            find_transcriptions(web_page, pmss_images[file])
     for file in onlyfiles:
         if file != ".DS_Store":
             for image in pmss_images[file].keys():
