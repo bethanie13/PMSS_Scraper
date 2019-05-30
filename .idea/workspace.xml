@@ -2,52 +2,48 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="69565ef5-fdd4-4a43-b6e1-9ddb6f83827b" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Page.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/QueueClass.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Transcription.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Caption.py" beforeDir="false" afterPath="$PROJECT_DIR$/Caption.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Images.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/html/Outliers/LORAINE WYMAN and HOWARD BROCKWAY - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/html/Outliers/PMSS GIRLS' OCTET 1936-1937 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Image.py" beforeDir="false" afterPath="$PROJECT_DIR$/Image.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Page.py" beforeDir="false" afterPath="$PROJECT_DIR$/Page.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Scraper.py" beforeDir="false" afterPath="$PROJECT_DIR$/Scraper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.html" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2484_mod-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2484_mod-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2489_mod-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2489_mod-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2494c-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2494c-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2507_mod-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2507_mod-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2526c_mod-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2526c_mod-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2526d_mod-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2526d_mod-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2527v_mod-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2527v_mod-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/a.html" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/a.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/a_data/cropped-P1050109-32x32.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/a_data/cropped-P1050109-32x32.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/analytics.js" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/analytics.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/blocks.css" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/blocks.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/cse.js" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/cse.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/cse_element__en.js" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/cse_element__en.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/css.css" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/css.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/default.css" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/default.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/default_002.css" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/default_002.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/defaulten.css" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/defaulten.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/frontend.js" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/frontend.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/google_cse_v2.js" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/google_cse_v2.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/jquery-migrate.js" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/jquery-migrate.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/jquery.js" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/jquery.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_214-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_214-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_283-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_283-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_284-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_284-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_294-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_294-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_313-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_313-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/navigation.js" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/navigation.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/pettit_41_003-1024x715.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/pettit_41_003-1024x715.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/pettit_41_003-150x150.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/pettit_41_003-150x150.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/pmss_photo_MOD_wells_evelyn_portrait_enlarged-2-879x1024.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/pmss_photo_MOD_wells_evelyn_portrait_enlarged-2-879x1024.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/style_002.css" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/style_002.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/theme.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/wgs2.css" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/wgs2.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/wp-embed.js" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/wp-embed.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/wp-emoji-release.js" beforeDir="false" afterPath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/wp-emoji-release.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2484_mod-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2489_mod-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2494c-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2507_mod-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2526c_mod-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2526d_mod-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/X_099_workers_2527v_mod-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/a.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/a_data/cropped-P1050109-32x32.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/analytics.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/blocks.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/cse.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/cse_element__en.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/css.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/default.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/default_002.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/defaulten.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/frontend.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/google_cse_v2.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/jquery-migrate.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/jquery.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_214-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_283-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_284-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_294-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/melv_II_album_313-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/navigation.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/pettit_41_003-1024x715.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/pettit_41_003-150x150.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/pmss_photo_MOD_wells_evelyn_portrait_enlarged-2-879x1024.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/style.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/style_002.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/theme.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/wgs2.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/wp-embed.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/EVELYN K. WELLS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS_files/wp-emoji-release.js" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -57,24 +53,21 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Scraper.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="577">
-              <caret line="274" column="18" lean-forward="true" selection-start-line="274" selection-start-column="18" selection-end-line="274" selection-end-column="18" />
+            <state relative-caret-position="-1464">
+              <caret line="175" column="19" lean-forward="true" selection-start-line="175" selection-start-column="19" selection-end-line="175" selection-end-column="19" />
               <folding>
                 <element signature="e#0#29#0" expanded="true" />
                 <element signature="e#1243#1650#0" />
                 <element signature="e#1693#2193#0" />
-                <element signature="e#2232#2505#0" />
-                <element signature="e#2542#3226#0" />
-                <element signature="e#3288#3746#0" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/html/GLYN MORRIS STUDY &amp; RECOMMENDATIONS V STUDENTS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm">
           <provider selected="true" editor-type-id="text-editor" />
         </entry>
@@ -96,8 +89,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Page.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="60">
-              <caret line="4" column="22" lean-forward="true" selection-start-line="4" selection-start-column="22" selection-end-line="4" selection-end-column="22" />
+            <state relative-caret-position="75">
+              <caret line="5" selection-start-line="5" selection-end-line="5" />
             </state>
           </provider>
         </entry>
@@ -139,6 +132,7 @@
       <find>passed</find>
       <find>cobb</find>
       <find>cobb_fare</find>
+      <find>march</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -244,18 +238,33 @@
       <option name="presentableId" value="Default" />
       <updated>1558485764518</updated>
     </task>
+    <task id="LOCAL-00001" summary="Added files for testing">
+      <created>1559230528602</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1559230528602</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Added files for testing">
+      <created>1559230581372</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1559230581372</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="23" width="2560" height="1337" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.24970461" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24970461" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.18554217" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.18554217" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.30843374" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -269,27 +278,22 @@
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
     </layout>
   </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Added files for testing" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added files for testing" />
+    <option name="GROUP_MULTIFILE_MERGE_BY_DIRECTORY" value="true" />
+  </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Scraper.py</url>
-          <line>320</line>
+          <line>326</line>
           <option name="timeStamp" value="77" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Scraper.py</url>
-          <line>209</line>
-          <option name="timeStamp" value="78" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Scraper.py</url>
-          <line>189</line>
-          <option name="timeStamp" value="79" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Scraper.py</url>
-          <line>249</line>
+          <line>255</line>
           <option name="timeStamp" value="80" />
         </line-breakpoint>
       </breakpoints>
@@ -376,8 +380,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Page.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="4" column="22" lean-forward="true" selection-start-line="4" selection-start-column="22" selection-end-line="4" selection-end-column="22" />
+        <state relative-caret-position="75">
+          <caret line="5" selection-start-line="5" selection-end-line="5" />
         </state>
       </provider>
     </entry>
@@ -388,26 +392,23 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Scraper.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="577">
-          <caret line="274" column="18" lean-forward="true" selection-start-line="274" selection-start-column="18" selection-end-line="274" selection-end-column="18" />
-          <folding>
-            <element signature="e#0#29#0" expanded="true" />
-            <element signature="e#1243#1650#0" />
-            <element signature="e#1693#2193#0" />
-            <element signature="e#2232#2505#0" />
-            <element signature="e#2542#3226#0" />
-            <element signature="e#3288#3746#0" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/html/GLYN MORRIS STUDY &amp; RECOMMENDATIONS IX INTERPRETATION - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/html/GLYN MORRIS STUDY &amp; RECOMMENDATIONS V STUDENTS - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm">
       <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Scraper.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1464">
+          <caret line="175" column="19" lean-forward="true" selection-start-line="175" selection-start-column="19" selection-end-line="175" selection-end-column="19" />
+          <folding>
+            <element signature="e#0#29#0" expanded="true" />
+            <element signature="e#1243#1650#0" />
+            <element signature="e#1693#2193#0" />
+          </folding>
+        </state>
+      </provider>
     </entry>
   </component>
 </project>
