@@ -24,7 +24,7 @@ class Image:
         :param self: An Image object
         :return: None
         """
-        final_file_pieces = []
+        final_file_pieces = []  # puts the pieces of the final file into a list
         check = []
         resolution = ""
         ext = self.file_name[-4:]  # Assuming the extension is 3 characters long save the last few characters

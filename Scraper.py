@@ -97,7 +97,8 @@ def caption_link(tag, img):
     :param img: an instance of the Images class for storing the given  information
     :return: None
     """
-    img.caption_link = tag.get("aria-describedby")
+    img.caption_link = tag.get("aria-describedby")  # retrieves the link of the caption by looking for the key word of
+    # aria-describedby and gets the tag from it
 
 
 def image_file_path_info(tag, img):
@@ -123,8 +124,8 @@ def image_resolution(tag, img):
     :param img: An Image object
     :return: None
     """
-    img.image_resized_resolution[0] = tag.get("width")
-    img.image_resized_resolution[1] = tag.get("height")
+    img.image_resized_resolution[0] = tag.get("width")  # outputs the width resolution of the image
+    img.image_resized_resolution[1] = tag.get("height")  # outputs the height resolution of the image
 
 
 def find_captions(page_soup):
@@ -190,24 +191,24 @@ def find_transcriptions(page_soup, img_dict):
                         img_dict[current_file].transcription += "\n"
                     else:
                         img_dict[current_file].transcription += " "  # associate image with the transcript
-        if tag.name == "p":
+        if tag.name == "p":    # looks for appropriate tag name by finding the p tag
             if tag.string:
-                if len(tag.string) <= 10:
+                if len(tag.string) <= 10:  # if the length of the string is less than or equal to 10
                     page_source = ""
-                    for word in tag.string.split():
-                        if word.lower() == "page":
-                           page_source += word
+                    for word in tag.string.split():  # split the string that is in the tag into different words
+                        if word.lower() == "page":  # looking for the word page in order to find where the transcript is seperated
+                           page_source += word        # add the word to the page source
                         else:
                             try:
                                 int(word)
                                 page_source += word
                             except ValueError:
                                 pass
-                    if len(page_source) > 2:
-                        img_dict[page_source] = Image()
-                        current_file = page_source
+                    if len(page_source) > 2:    # if the length of the page source is > 2
+                        img_dict[page_source] = Image()   # image dictionary has page source as a key which will store the image
+                        current_file = page_source    # current file we see will be the page source
 
-        if tag.name in wanted_tags:
+        if tag.name in wanted_tags:   # looks for only the tags stored in the variable of wanted tags
             for main_tags_child in tag.children:
                 if main_tags_child.string:
                     if "transcription" in \
@@ -308,7 +309,7 @@ def bibliography_pairings(page_soup):
     :param page_soup: Beautiful Soup Object
     :return: None
     """
-    rows = page_soup.tbody
+    rows = page_soup.tbody      # the rows of the table will be within the tbody of the html
     count_data = 0
     bibliography_dict = {}
     title = ""  # variables to store the information of the data in the rows
@@ -332,7 +333,7 @@ def bibliography_pairings(page_soup):
             title = ""
             info = ""
 
-    return bibliography_dict
+    return bibliography_dict    # the dictionary of the bibliography will be returned
 
 
 def main():
