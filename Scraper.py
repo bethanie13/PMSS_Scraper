@@ -253,20 +253,21 @@ def record_transcript(img_dict, recording_state, current_file, tag):
             tag.string)  # associate image with the transcript
 
 
-def write_csv(dict_to_write, csv):
+def write_csv(page_to_write):
     """
     Uses the csv library to write .csv files containing the image's information
-    :param dict_to_write: The dictionary containing image objects that will be written to a csv file
-    :param csv: the name of the csv file
+    :param page_to_write: The dictionary containing image objects that will be written to a csv file
     :return:
     """
-    with open(csv, 'w') as csvfile:
+    ext_len = len(page_to_write.html.split(".")[-1])
+    csv_name = page_to_write.html[:-ext_len-1] + ".csv"
+
+    with open(csv_name, 'w') as csvfile:
         file_writer = csv.writer(csvfile)
-        csv_data = [["Filename", "Transcription", "Upload Date", "Resolution"]]
-        for image in dict_to_write.keys():
-            csv_data.append([dict_to_write[image].file_name, dict_to_write[image].transcription,
-                             dict_to_write[image].upload_date, dict_to_write[image].image_resized_resolution[0] + "x" +
-                             dict_to_write[image].image_resized_resolution[1]])
+        csv_data = [["Filename", "Transcription", "Upload Date"]]
+        for image in page_to_write.images.keys():
+            csv_data.append([page_to_write.images[image].file_name, "\"" + page_to_write.images[image].transcription + "\"",
+                             page_to_write.images[image].upload_date])
         file_writer.writerows(csv_data)
         csvfile.close()
 
@@ -275,41 +276,41 @@ def bibliography_pairings(page_soup):
     """
     Pairs the information in the table of the bibliography together with the appropriate data.
     :param page_soup: Beautiful Soup Object
-    :return: None
+    :return: A dictionary containing all of the bibliography pairings
     """
     rows = page_soup.tbody
     count_data = 0
     bibliography_dict = {}
     title = ""  # variables to store the information of the data in the rows
     info = ""
-    for row in rows.children:  # gets the child tag of table row
-        if row != "\n":
-            for table_data in row.children:  # gets the child tag of table data
-                if table_data != "\n":
-                    for p in table_data.children:  # gets the information/tags in the tag p
-                        if p != "\n":
-                            # store the information two at a time
-                            if count_data == 0:
-                                title = p.string  # if the count is 0 then put the information in variable 1
-                                count_data += 1
-                            elif count_data != 0:  # if the count is not 0 then put the information in variable 2
-                                info = p.string
-                                count_data += 1
-        if count_data == 2:  # if count is 2 then reset the count
-            count_data = 0
-            bibliography_dict[title] = info  # store variables into the dictionary with key and value
-            title = ""
-            info = ""
+    if rows:
+        for row in rows.children:  # gets the child tag of table row
+            if row != "\n":
+                for table_data in row.children:  # gets the child tag of table data
+                    if table_data != "\n":
+                        for p in table_data.children:  # gets the information/tags in the tag p
+                            if p != "\n":
+                                # store the information two at a time
+                                if count_data == 0:
+                                    title = p.string  # if the count is 0 then put the information in variable 1
+                                    count_data += 1
+                                elif count_data != 0:  # if the count is not 0 then put the information in variable 2
+                                    info = p.string
+                                    count_data += 1
+            if count_data == 2:  # if count is 2 then reset the count
+                count_data = 0
+                bibliography_dict[title] = info  # store variables into the dictionary with key and value
+                title = ""
+                info = ""
 
     return bibliography_dict
 
 
 def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
-    # path = "/home/schmidtt/PycharmProjects/PMSS_Scraper/html/"
+    path = "/home/schmidtt/PycharmProjects/PMSS_Scraper/html/"
+    # path = "/Users/bereacollege/Documents/internship/PMSS_Scraper/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
-    # file = "ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
-    pmss_images = {}
     pmss_pages = []
 
     for file in onlyfiles:
@@ -317,24 +318,24 @@ def main():
             current_page = Page()
             f = open(path + file)
             web_page = BeautifulSoup(f, 'html.parser')
-            pmss_images[file] = image_info(web_page)
+            current_page.images = image_info(web_page)
             captions = find_captions(web_page)
-            image_caption_linking(captions, pmss_images[file])
-            current_page.images = pmss_images
-            # current_page.bibliography = bibliography_pairings(web_page)
+            image_caption_linking(captions, current_page.images)
+            current_page.bibliography = bibliography_pairings(web_page)
             current_page.html = file
+            find_transcriptions(web_page, current_page.images)
             pmss_pages.append(copy.copy(current_page))
-            find_transcriptions(web_page, pmss_images[file])
-    for file in onlyfiles:
-        if file != ".DS_Store":
-            for image in pmss_images[file].keys():
-                # print(image + ": ")
-                # pmss_images[file][image].list_images()
-                print(image + " ")
-                print(pmss_images[file][image])
+    for page in pmss_pages:
+        for image in page.images.keys():
+            print(image + " ")
+            print(page.images[image])
 
-    # write_csv(pmss_images)
-    print(pmss_pages[0].html)
+    to_csv = input("Do you want to create csv files? (y/n): ")
+    if to_csv.lower() == "y":
+        for page in pmss_pages:
+            write_page = input("Do you want to output {}? (y/n): ".format(page.html))
+            if write_page.lower() == "y":
+                write_csv(page)
 
 
 if __name__ == "__main__":
