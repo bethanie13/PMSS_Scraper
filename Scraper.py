@@ -155,10 +155,10 @@ def image_caption_linking(captions_dict, images_dict):
     :param images_dict: Dictionary holding all images from the page
     :return: None
     """
-    for caption in captions_dict.keys():
-        for image in images_dict.keys():
-            if captions_dict[caption].image_link == images_dict[image].caption_link:
-                images_dict[image].caption = captions_dict[caption].caption
+    for caption in captions_dict.keys():      # for every caption of an image in the caption dictionary
+        for image in images_dict.keys():      # for every image in the image dictionary
+            if captions_dict[caption].image_link == images_dict[image].caption_link:  # if the caption dictionary matches the image dictionary
+                images_dict[image].caption = captions_dict[caption].caption  # then the image will go with the caption
 
 
 def find_transcriptions(page_soup, img_dict):
@@ -214,15 +214,14 @@ def find_transcriptions(page_soup, img_dict):
                             main_tags_child.string.lower():   # for each tag we look for the string called transcription
                         recording = True
 
-
                     elif ".jpg" in main_tags_child.string:
                         if recording:
                             split_name = main_tags_child.string.split("[")  # if .jpg found then we will then extract file name
                             current_file = split_name[-1][:-5]
                             image_index += 1
                             if current_file not in img_dict:
-                                img_dict[current_file] = Image()
-                                img_dict[current_file].file_name = "Outlier"
+                                img_dict[current_file] = Image()             # if the current file is not in the image dictionary
+                                img_dict[current_file].file_name = "Outlier"  # we need to store the image into the dictionary and note that is an outlier
 
                     elif "[" in main_tags_child.string:  # If we find a bracket, check if it is a filename
                         # a list of keys in our image dictionary
@@ -240,7 +239,7 @@ def find_transcriptions(page_soup, img_dict):
                                     if levenshtein_ratio_and_distance(subsection.lower(), keys[image_index], True) >= .80:
                                         current_file = keys[image_index]  # update the current file
                                         image_index += 1  # increase the image index
-                                        part_of_transcription = False  # since we determined it isa file name, this is now False
+                                        part_of_transcription = False  # since we determined it is a file name, this is now False
                         if part_of_transcription:  # If the text was deemed to not be a file
                             record_transcript(img_dict, recording, current_file, main_tags_child)  # record the text
 
@@ -250,38 +249,39 @@ def find_transcriptions(page_soup, img_dict):
                     elif main_tags_child.name == "div":   # we do not care about other div tags
                         pass
 
-                    elif main_tags_child.parent.name == "p" and main_tags_child.name != "div":
-                        record_transcript(img_dict, recording, current_file, main_tags_child)
+                    elif main_tags_child.parent.name == "p" and main_tags_child.name != "div":  # if the tags parent is the p tag and the child is not in the div tag
+                        record_transcript(img_dict, recording, current_file, main_tags_child)   # we record the transcription into the dictionary
 
                     else:  # if we reach any other tag
-                        if main_tags_child.previous_sibling:
-                            previous_tag = main_tags_child.previous_sibling.name
+                        if main_tags_child.previous_sibling:    # if the child of the main tag is in the previous level
+                            previous_tag = main_tags_child.previous_sibling.name  # make the previous tag the previous level of the main tags child which is in the same level
                         else:
-                            previous_tag = None
-                        if main_tags_child.next_sibling:
-                            next_tag = main_tags_child.next_sibling.name
+                            previous_tag = None    # if not there is no previous tag
+                        if main_tags_child.next_sibling:    # if the child of the main tag is in the next level
+                            next_tag = main_tags_child.next_sibling.name   # make the next tag the next level of the main tags child which is in the same level
                         else:
-                            next_tag = None
+                            next_tag = None   # if not there is no next tag
                         if previous_tag == "span" or \
                                 next_tag == "span":  # if the tag is near a span tag we save that text
                             record_transcript(img_dict, recording, current_file, main_tags_child)
 
                 else:
-                    for grandchild in main_tags_child.children:
-                        record_transcript(img_dict, recording, current_file, grandchild)
+                    for grandchild in main_tags_child.children:  #in the lowest level tag record the text
+                        record_transcript(img_dict, recording, current_file, grandchild)  # record the text(transcript) using record_transcript function
 
 
 def record_transcript(img_dict, recording_state, current_file, tag):
     """
+    Records the transcription and puts it into the dictionary with the image
     :param img_dict: Dictionary containing images for a page
     :param recording_state: boolean for if we are recording a transcript or not
     :param current_file: Holds a string for transcription to ensure it goes to correct position in dictionary
     :param tag: Beautiful Soup Object
     :return: None
-    """
-    if recording_state and current_file != "" and tag.name != "div":
-        img_dict[current_file].transcription += str(
-            tag.string)  # associate image with the transcript
+    """                                                               # if the recording state and current file are not empty
+    if recording_state and current_file != "" and tag.name != "div":   # and the tag name is not div
+        img_dict[current_file].transcription += str(           # we need to store the transcription and text into the image dictionary
+            tag.string)                                        # associate image with the transcript
 
 
 def write_csv(dict_to_write, csv):
@@ -340,7 +340,6 @@ def main():
     # path = "/home/schmidtt/PycharmProjects/PMSS_Scraper/html/"
     path = "/Users/bereacollege/Documents/internship/PMSS_Scraper/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
-    # file = "ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
     pmss_images = {}
     pmss_pages = []
 
