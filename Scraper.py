@@ -2,11 +2,13 @@ from bs4 import BeautifulSoup
 from Image import Image
 from Caption import Caption
 import copy
+from collections import deque
 import csv
 from os import listdir
 from os.path import isfile, join
 from Page import Page
 import numpy as np
+import requests
 
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
@@ -371,6 +373,65 @@ def bibliography_pairings(page_soup):
     return bibliography_dict  # the dictionary of the bibliography will be returned
 
 
+# def parse_html(html):
+#     """"
+#     Extracts the titles by using their common structure: a div tag
+#     with the class “mw-search-result-heading” that enclose an a tag
+#     with the title as the title attribute. The links to the following
+#     pages are extracted similarly: they are all a tags with the class
+#     “mw-nextlink” and the url of the next page as the href attribute.
+#     :param html: HTML of the webpage
+#     :return:
+#     """
+#     page_soup = BeautifulSoup(html)
+#     title_element = page_soup.find("div", attrs={"class": "mw-search-result-heading"}).find("a")
+#     title = title_element.attrs["title"]  # in this crawler, we will collect the title element
+#     links = page_soup.find_all("a", attrs={"class": "mw-nextlink"}) # get the next links to crawl
+#     return title, [x.attrs["href"] for x in links if "href" in x.attrs]
+#
+#
+# def web_crawler(url_list):
+#     """
+#     Urls are inserted and extracted from this object. The web
+#     crawler uses the requests library to send a request to a url.
+#     It will get response and take response out of web page.
+#     :param url_list: List of all url's to crawl
+#     :return: Output data
+#     """
+#
+#     urls_to_crawl = deque(url_list)
+#     output_data = []
+#     while len(urls_to_crawl) > 0:
+#         url = urls_to_crawl.pop()
+#         url_contents = requests.get(url).text
+#         data, links = parse_html(url_contents)
+#         output_data.append(data)
+#         urls_to_crawl.extend(links)
+#         return output_data
+
+    # url = 'https://pmss.wpengine.com'
+    # headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
+    # result = requests.get(url, headers=headers)
+    # print(result.content.decode())
+    # result.status_code
+    # print(result.status_code)
+    # result.text
+    # print(result.text)
+
+
+def web(page, web_url):
+    if page > 0:
+        url = web_url
+        result = requests.get(url)
+        plain = result.text
+        page_soup = BeautifulSoup(plain, "html.parser")
+        for link in page_soup.findAll('a', {'class': 's-access-detail-page'}):
+            title_link = link.get('title')
+            print(title_link)
+            links_destination = link.get('href')
+            print(links_destination)
+
+
 def main():
     # path = input("Please enter the file path to the directory where the html files are stored: ")
     # path = "/home/schmidtt/PycharmProjects/PMSS_Scraper/html/"
@@ -378,6 +439,16 @@ def main():
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     pmss_images = {}
     pmss_pages = []
+    # url = 'https://pmss.wpengine.com'
+    # headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
+    # result = requests.get(url, headers=headers)
+    # print(result.content.decode())
+    # result.status_code
+    # print(result.status_code)
+    # result.text
+    # print(result.text)
+    # result.text
+    # print(result.text)
 
     for file in onlyfiles:
         if file != ".DS_Store":
@@ -402,6 +473,9 @@ def main():
 
     # write_csv(pmss_images)
     print(pmss_pages[0].html)
+    # parse_html()
+    # web_crawler()
+    web(1, 'https://pmss.wpengine.com/')
 
 
 if __name__ == "__main__":
