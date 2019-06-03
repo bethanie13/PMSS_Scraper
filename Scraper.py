@@ -394,7 +394,7 @@ def pages_info():
     path = os.getcwd() + "/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     pages = []
-
+    
     for file in onlyfiles:
         if file != ".DS_Store":
             current_page = Page()
@@ -416,12 +416,12 @@ def show_results(page_list):
             print(image + " ")
             print(page.images[image])
 
-
+            
 def main():
     pmss_pages = pages_info()
     show_results(pmss_pages)
     write_csv(pmss_pages)
 
-
+    
 if __name__ == "__main__":
     main()
