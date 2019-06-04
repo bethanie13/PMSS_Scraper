@@ -16,8 +16,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Scraper.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="160">
-              <caret line="386" column="13" lean-forward="true" selection-start-line="386" selection-start-column="13" selection-end-line="386" selection-end-column="13" />
+            <state relative-caret-position="475">
+              <caret line="467" selection-start-line="467" selection-end-line="467" />
               <folding>
                 <element signature="e#0#29#0" expanded="true" />
               </folding>
@@ -28,8 +28,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Page.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="60">
-              <caret line="4" column="22" selection-start-line="4" selection-start-column="22" selection-end-line="4" selection-end-column="22" />
+            <state relative-caret-position="75">
+              <caret line="5" lean-forward="true" selection-start-line="5" selection-end-line="5" />
             </state>
           </provider>
         </entry>
@@ -138,9 +138,9 @@
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="3" />
-    <option name="y" value="89" />
-    <option name="width" value="2560" />
+    <option name="x" value="1" />
+    <option name="y" value="23" />
+    <option name="width" value="2549" />
     <option name="height" value="1337" />
   </component>
   <component name="ProjectView">
@@ -330,13 +330,27 @@
       <option name="project" value="LOCAL" />
       <updated>1559658178274</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Merge branch 'master' of https://github.com/Tradd-Schmidt/PMSS_Scraper into Edits&#10;&#10;# Conflicts:&#10;#&#9;Scraper.py">
+      <created>1559658633614</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1559658633614</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Web crawler has passed 500 pages without errors.">
+      <created>1559682752559</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1559682752559</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="1" y="23" width="2560" height="1337" extended-state="6" />
+    <frame x="1" y="23" width="2559" height="1337" extended-state="6" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24970461" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24980299" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -406,31 +420,35 @@
     <MESSAGE value="Working on web crawlerr" />
     <MESSAGE value="Working on web crawler" />
     <MESSAGE value="Web Crawler work in progress" />
-    <option name="LAST_COMMIT_MESSAGE" value="Web Crawler work in progress" />
+    <MESSAGE value="Merge branch 'master' of https://github.com/Tradd-Schmidt/PMSS_Scraper into Edits&#10;&#10;# Conflicts:&#10;#&#9;Scraper.py" />
+    <MESSAGE value="Web crawler has passed 500 pages without errors." />
+    <option name="LAST_COMMIT_MESSAGE" value="Web crawler has passed 500 pages without errors." />
     <option name="GROUP_MULTIFILE_MERGE_BY_DIRECTORY" value="true" />
   </component>
   <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Scraper.py</url>
-          <line>418</line>
-          <option name="timeStamp" value="3" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
     <watches-manager>
       <configuration name="PythonConfigurationType">
-        <watch expression="img_dict['ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm']['cobb_march_time_006.jpg']" />
+        <watch expression="img_dict['ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm']['cobb_march_time_006.jpg']" language="Python" />
         <watch expression="current_file" language="Python" />
-        <watch expression="subsection" />
+        <watch expression="subsection" language="Python" />
         <watch expression="image_index" />
         <watch expression="main_tags_child" />
+        <watch expression="subsection" language="Python" />
       </configuration>
     </watches-manager>
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="watch">
+      <expression>
+        <expression-string>img_dict['ALICE COBB STORIES March of Time in Greasy Valley, 1936 - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm']['cobb_march_time_006.jpg']</expression-string>
+        <language-id>Python</language-id>
+        <evaluation-mode>EXPRESSION</evaluation-mode>
+      </expression>
+      <expression>
+        <expression-string>subsection</expression-string>
+        <language-id>Python</language-id>
+        <evaluation-mode>EXPRESSION</evaluation-mode>
+      </expression>
       <expression>
         <expression-string>current_file</expression-string>
         <language-id>Python</language-id>
@@ -524,15 +542,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Page.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="4" column="22" selection-start-line="4" selection-start-column="22" selection-end-line="4" selection-end-column="22" />
+        <state relative-caret-position="75">
+          <caret line="5" lean-forward="true" selection-start-line="5" selection-end-line="5" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Scraper.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="160">
-          <caret line="386" column="13" lean-forward="true" selection-start-line="386" selection-start-column="13" selection-end-line="386" selection-end-column="13" />
+        <state relative-caret-position="475">
+          <caret line="467" selection-start-line="467" selection-end-line="467" />
           <folding>
             <element signature="e#0#29#0" expanded="true" />
           </folding>
