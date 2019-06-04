@@ -2,13 +2,13 @@ from bs4 import BeautifulSoup
 from Image import Image
 from Caption import Caption
 import copy
-from collections import deque
 import csv
 from os import listdir
 from os.path import isfile, join
 from Page import Page
 import numpy as np
 import requests
+import os
 
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
@@ -322,22 +322,31 @@ def record_transcript(img_dict, recording_state, current_file, tag):
             tag.string)  # associate image with the transcript
 
 
-def write_csv(dict_to_write, csv):
+def write_csv(page_list):
     """
     Uses the csv library to write .csv files containing the image's information
-    :param dict_to_write: The dictionary containing image objects that will be written to a csv file
-    :param csv: the name of the csv file
+    :param page_list: A list of pages that will have their contents output
     :return:
     """
-    with open(csv, 'w') as csvfile:
-        file_writer = csv.writer(csvfile)
-        csv_data = [["Filename", "Transcription", "Upload Date", "Resolution"]]
-        for image in dict_to_write.keys():
-            csv_data.append([dict_to_write[image].file_name, dict_to_write[image].transcription,
-                             dict_to_write[image].upload_date, dict_to_write[image].image_resized_resolution[0] + "x" +
-                             dict_to_write[image].image_resized_resolution[1]])
-        file_writer.writerows(csv_data)
-        csvfile.close()
+    to_csv = input("Do you want to create csv files? (y/n): ")
+    csv_path = os.getcwd() + "/csv/"
+    os.chdir(csv_path)
+    if to_csv.lower() == "y":
+        for page in page_list:
+            write_page = input("Do you want to output {}? (y/n): ".format(page.html))
+            if write_page.lower() == "y":
+
+                ext_len = len(page.html.split(".")[-1])
+                csv_name = page.html[:-ext_len - 1] + ".csv"
+
+                with open(csv_name, 'w') as csvfile:
+                    file_writer = csv.writer(csvfile)
+                    csv_data = [["Filename", "Transcription", "Upload Date"]]
+                    for image in page.images.keys():
+                        csv_data.append([page.images[image].file_name, "\"" + page.images[image].transcription + "\"",
+                                         page.images[image].upload_date])
+                    file_writer.writerows(csv_data)
+                    csvfile.close()
 
 
 def bibliography_pairings(page_soup):
@@ -373,109 +382,62 @@ def bibliography_pairings(page_soup):
     return bibliography_dict  # the dictionary of the bibliography will be returned
 
 
-# def parse_html(html):
-#     """"
-#     Extracts the titles by using their common structure: a div tag
-#     with the class “mw-search-result-heading” that enclose an a tag
-#     with the title as the title attribute. The links to the following
-#     pages are extracted similarly: they are all a tags with the class
-#     “mw-nextlink” and the url of the next page as the href attribute.
-#     :param html: HTML of the webpage
-#     :return:
-#     """
-#     page_soup = BeautifulSoup(html)
-#     title_element = page_soup.find("div", attrs={"class": "mw-search-result-heading"}).find("a")
-#     title = title_element.attrs["title"]  # in this crawler, we will collect the title element
-#     links = page_soup.find_all("a", attrs={"class": "mw-nextlink"}) # get the next links to crawl
-#     return title, [x.attrs["href"] for x in links if "href" in x.attrs]
-#
-#
-# def web_crawler(url_list):
-#     """
-#     Urls are inserted and extracted from this object. The web
-#     crawler uses the requests library to send a request to a url.
-#     It will get response and take response out of web page.
-#     :param url_list: List of all url's to crawl
-#     :return: Output data
-#     """
-#
-#     urls_to_crawl = deque(url_list)
-#     output_data = []
-#     while len(urls_to_crawl) > 0:
-#         url = urls_to_crawl.pop()
-#         url_contents = requests.get(url).text
-#         data, links = parse_html(url_contents)
-#         output_data.append(data)
-#         urls_to_crawl.extend(links)
-#         return output_data
-
-    # url = 'https://pmss.wpengine.com'
-    # headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
-    # result = requests.get(url, headers=headers)
-    # print(result.content.decode())
-    # result.status_code
-    # print(result.status_code)
-    # result.text
-    # print(result.text)
-
-
-def web(page, web_url):
-    if page > 0:
-        url = web_url
-        result = requests.get(url)
-        plain = result.text
-        page_soup = BeautifulSoup(plain, "html.parser")
-        for link in page_soup.findAll('a', {'class': 's-access-detail-page'}):
-            title_link = link.get('title')
-            print(title_link)
-            links_destination = link.get('href')
-            print(links_destination)
-
-
-def main():
-    # path = input("Please enter the file path to the directory where the html files are stored: ")
-    # path = "/home/schmidtt/PycharmProjects/PMSS_Scraper/html/"
-    path = "/Users/bereacollege/Documents/internship/PMSS_Scraper/html/"
+def pages_info():
+    path = os.getcwd() + "/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
-    pmss_images = {}
-    pmss_pages = []
-    # url = 'https://pmss.wpengine.com'
-    # headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
-    # result = requests.get(url, headers=headers)
-    # print(result.content.decode())
-    # result.status_code
-    # print(result.status_code)
-    # result.text
-    # print(result.text)
-    # result.text
-    # print(result.text)
+    pages = []
 
     for file in onlyfiles:
         if file != ".DS_Store":
             current_page = Page()
             f = open(path + file)
             web_page = BeautifulSoup(f, 'html.parser')
-            pmss_images[file] = image_info(web_page)
+            current_page.images = image_info(web_page)
             captions = find_captions(web_page)
-            image_caption_linking(captions, pmss_images[file])
-            current_page.images = pmss_images
-            # current_page.bibliography = bibliography_pairings(web_page)
+            image_caption_linking(captions, current_page.images)
+            current_page.bibliography = bibliography_pairings(web_page)
             current_page.html = file
-            pmss_pages.append(copy.copy(current_page))
-            find_transcriptions(web_page, pmss_images[file])
-    for file in onlyfiles:
-        if file != ".DS_Store":
-            for image in pmss_images[file].keys():
-                # print(image + ": ")
-                # pmss_images[file][image].list_images()
-                print(image + " ")
-                print(pmss_images[file][image])
+            find_transcriptions(web_page, current_page.images)
+            pages.append(copy.copy(current_page))
+    return pages
 
-    # write_csv(pmss_images)
-    print(pmss_pages[0].html)
-    # parse_html()
-    # web_crawler()
-    web(1, 'https://pmss.wpengine.com/')
+
+def show_results(page_list):
+    for page in page_list:
+        for image in page.images.keys():
+            print(image + " ")
+            print(page.images[image])
+
+
+def web(links_visited, web_url):
+    split_link = web_url.split(".")
+    domain = split_link[0] + split_link[1]
+    if domain != "https://pmsswpengine":
+        return
+    if web_url in links_visited:
+        return
+    links_visited.append(web_url)
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
+     (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
+    result = requests.get(web_url, headers=headers)
+    plain = result.text
+    page_soup = BeautifulSoup(plain, "html.parser")
+    for link in page_soup.findAll('a'):
+        if not link.get("class"):
+            title_link = link.get('title')
+            print(title_link)
+            links_destination = link.get('href')
+            print(links_destination)
+            web(links_visited, links_destination)
+
+
+def main():
+    pmss_pages = pages_info()
+    show_results(pmss_pages)
+    write_csv(pmss_pages)
+
+    links_visited = []
+    web(links_visited, 'https://pmss.wpengine.com/')
 
 
 if __name__ == "__main__":
