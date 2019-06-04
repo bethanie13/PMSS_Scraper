@@ -360,26 +360,35 @@ def bibliography_pairings(page_soup):
     bibliography_dict = {}
     title = ""  # variables to store the information of the data in the rows
     info = ""
-    for row in rows.children:  # gets the child tag of table row
-        if row != "\n":
-            for table_data in row.children:  # gets the child tag of table data
-                if table_data != "\n":
-                    for p in table_data.children:  # gets the information/tags in the tag p
-                        if p != "\n":
-                            # store the information two at a time
-                            if count_data == 0:
-                                title = p.string  # if the count is 0 then put the information in variable 1
-                                count_data += 1
-                            elif count_data != 0:  # if the count is not 0 then put the information in variable 2
-                                info = p.string
-                                count_data += 1
-        if count_data == 2:  # if count is 2 then reset the count
-            count_data = 0
-            bibliography_dict[title] = info  # store variables into the dictionary with key and value
-            title = ""
-            info = ""
+    if rows:
+        for row in rows.children:  # gets the child tag of table row
+            if row != "\n":
+                for table_data in row.children:  # gets the child tag of table data
+                    if table_data != "\n":
+                        for p in table_data.children:  # gets the information/tags in the tag p
+                            if p != "\n":
+                                # store the information two at a time
+                                if count_data == 0:
+                                    title = p.string  # if the count is 0 then put the information in variable 1
+                                    count_data += 1
+                                elif count_data != 0:  # if the count is not 0 then put the information in variable 2
+                                    info = p.string
+                                    count_data += 1
+            if count_data == 2:  # if count is 2 then reset the count
+                count_data = 0
+                bibliography_dict[title] = info  # store variables into the dictionary with key and value
+                title = ""
+                info = ""
 
     return bibliography_dict  # the dictionary of the bibliography will be returned
+
+
+def dir_dive():
+    os.chdir("/Volumes/Elements/PMSS_ARCHIVE")
+    for root, dirs, files in os.walk(".", topdown=False):
+        for name in files:
+            if name[-4:] == ".tif":
+                print(name)
 
 
 def pages_info():
