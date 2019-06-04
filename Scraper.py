@@ -71,23 +71,25 @@ def image_info(page_soup):
     """
     images_dict = {}
     for image in page_soup.find_all('img'):
-        temp = Image()
+        if image.parent.name != "figure":
 
-        # Pull out the id that will be used to find this image's caption
-        caption_link(image, temp)
+            temp = Image()
 
-        # Pull the filename and upload date for this image
-        image_file_path_info(image, temp)
+            # Pull out the id that will be used to find this image's caption
+            caption_link(image, temp)
 
-        # Record the resolution information for this image
-        image_resolution(image, temp)
+            # Pull the filename and upload date for this image
+            image_file_path_info(image, temp)
 
-        # If resolution information is in the filename, strip that information out
-        temp.strip_resolution()
+            # Record the resolution information for this image
+            image_resolution(image, temp)
 
-        if temp.file_name != "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg":  # Ignore the header image
-            # Copy the image to a dictionary
-            images_dict[temp.file_name[:-len(temp.file_name.split(".")[-1]) - 1].lower()] = copy.copy(temp)
+            # If resolution information is in the filename, strip that information out
+            temp.strip_resolution()
+
+            if temp.file_name != "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg":  # Ignore the header image
+                # Copy the image to a dictionary
+                images_dict[temp.file_name[:-len(temp.file_name.split(".")[-1]) - 1].lower()] = copy.copy(temp)
     return images_dict
 
 
@@ -391,23 +393,24 @@ def dir_dive():
                 print(name)
 
 
-def pages_info():
+def pages_info(text):
     path = os.getcwd() + "/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     pages = []
 
-    for file in onlyfiles:
-        if file != ".DS_Store":
-            current_page = Page()
-            f = open(path + file)
-            web_page = BeautifulSoup(f, 'html.parser')
-            current_page.images = image_info(web_page)
-            captions = find_captions(web_page)
-            image_caption_linking(captions, current_page.images)
-            current_page.bibliography = bibliography_pairings(web_page)
-            current_page.html = file
-            find_transcriptions(web_page, current_page.images)
-            pages.append(copy.copy(current_page))
+    # for file in onlyfiles:
+    #     if file != ".DS_Store":
+    current_page = Page()
+    # f = open(path + file)
+    web_page = BeautifulSoup(text, 'html.parser')
+    current_page.images = image_info(web_page)
+    captions = find_captions(web_page)
+    image_caption_linking(captions, current_page.images)
+    current_page.bibliography = bibliography_pairings(web_page)
+    # current_page.html = file
+    find_transcriptions(web_page, current_page.images)
+    pages.append(copy.copy(current_page))
+    show_results(pages)
     return pages
 
 
@@ -419,33 +422,56 @@ def show_results(page_list):
 
 
 def web(links_visited, web_url):
-    split_link = web_url.split(".")
-    domain = split_link[0] + split_link[1]
+    split_link = web_url.split(".")  # splits the link on a period to get domain
+    if len(split_link) > 1:
+        domain = split_link[0] + split_link[1]  # stores the domain
+    else:
+        return
+    ext = ["jpg", "png", "tif"]
     if domain != "https://pmsswpengine":
         return
     if web_url in links_visited:
         return
-    links_visited.append(web_url)
+    if len(links_visited) > 500:
+        return
+    if web_url.split(".")[-1] in ext:
+        return
+    links_visited.append(web_url)   # append the urls that we visit to a list of links visited
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
-     (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
-    result = requests.get(web_url, headers=headers)
+     (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}   # this is the user agent name
+    result = requests.get(web_url, headers=headers)  # helps us avoid forbidden error code
     plain = result.text
-    page_soup = BeautifulSoup(plain, "html.parser")
-    for link in page_soup.findAll('a'):
-        if not link.get("class"):
-            title_link = link.get('title')
-            print(title_link)
-            links_destination = link.get('href')
-            print(links_destination)
-            web(links_visited, links_destination)
+    print("{} images: ".format(web_url))
+    pages_info(plain)
+    page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
+    for link in page_soup.findAll('a'):  # finds all a tags within html
+        if not link.get("class"):    # avoid the html tag with class
+            if len(links_visited) > 500:
+                return
+            # title_link = link.get('title')  # gets the title of the link
+            # print(title_link)
+            if link.contents:
+                if link.contents[0].name != "img":
+                    if link.parent:
+                        try:
+                            if link.parent.get("class")[0] == "must-log-in":
+                                return
+                        except TypeError:
+                            pass
+                    links_destination = link.get('href')  # gets the href and this determines the links destination
+                    # print(links_destination)
+                    web(links_visited, links_destination)  # recursive call to keep calling the different links
+
+
+
 
 
 def main():
-    pmss_pages = pages_info()
-    show_results(pmss_pages)
-    write_csv(pmss_pages)
+    # pmss_pages = pages_info()
+    # show_results(pmss_pages)
+    # write_csv(pmss_pages)
 
-    links_visited = []
+    links_visited = []  # list of links visited
     web(links_visited, 'https://pmss.wpengine.com/')
 
 
