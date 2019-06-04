@@ -7,6 +7,7 @@ from os import listdir
 from os.path import isfile, join
 from Page import Page
 import numpy as np
+import requests
 import os
 
 
@@ -336,7 +337,7 @@ def write_csv(page_list):
             if write_page.lower() == "y":
 
                 ext_len = len(page.html.split(".")[-1])
-                csv_name = page.html[:-ext_len-1] + ".csv"
+                csv_name = page.html[:-ext_len - 1] + ".csv"
 
                 with open(csv_name, 'w') as csvfile:
                     file_writer = csv.writer(csvfile)
@@ -394,7 +395,7 @@ def pages_info():
     path = os.getcwd() + "/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     pages = []
-    
+
     for file in onlyfiles:
         if file != ".DS_Store":
             current_page = Page()
@@ -416,12 +417,37 @@ def show_results(page_list):
             print(image + " ")
             print(page.images[image])
 
-            
+
+def web(links_visited, web_url):
+    split_link = web_url.split(".")
+    domain = split_link[0] + split_link[1]
+    if domain != "https://pmsswpengine":
+        return
+    if web_url in links_visited:
+        return
+    links_visited.append(web_url)
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
+     (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
+    result = requests.get(web_url, headers=headers)
+    plain = result.text
+    page_soup = BeautifulSoup(plain, "html.parser")
+    for link in page_soup.findAll('a'):
+        if not link.get("class"):
+            title_link = link.get('title')
+            print(title_link)
+            links_destination = link.get('href')
+            print(links_destination)
+            web(links_visited, links_destination)
+
+
 def main():
     pmss_pages = pages_info()
     show_results(pmss_pages)
     write_csv(pmss_pages)
 
-    
+    links_visited = []
+    web(links_visited, 'https://pmss.wpengine.com/')
+
+
 if __name__ == "__main__":
     main()
