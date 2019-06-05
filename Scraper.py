@@ -11,13 +11,13 @@ import requests
 import os
 
 
-def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
+def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
 
     """
-    levenshtein_ratio_and_distance:
+    Levenshtein_ratio_and_distance:
     Calculates levenshtein distance between two strings.
     If ratio_calc = True, the function computes the
-    levenshtein distance ratio of similarity between two strings
+    Levenshtein distance ratio of similarity between two strings
     For all i and j, distance[i,j] will contain the Levenshtein
     distance between the first i characters of s and the
     first j characters of t
@@ -32,7 +32,7 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
     if s == "" or t == "":
         return 0
 
-    # Populate matrix of zeros with the indeces of each character of both strings
+    # Populate matrix of zeros with the indices of each character of both strings
     for i in range(1, rows):
         for k in range(1,cols):
             distance[i][0] = i
@@ -42,7 +42,7 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
     for col in range(1, cols):
         for row in range(1, rows):
             if s[row-1] == t[col-1]:
-                cost = 0 # If the characters are the same in the two strings in a given position [i,j] then the cost is 0
+                cost = 0  # If the characters are the same in the two strings in a given position [i,j] then the cost is 0
             else:
                 # In order to align the results with those of the Python Levenshtein package, if we choose to calculate the ratio
                 # the cost of a substitution is 2. If we calculate just distance, then the cost of a substitution is 1.
@@ -70,9 +70,9 @@ def image_info(page_soup):
     :param page_soup: A Beautiful Soup object
     :return: A dictionary containing all of the images from the page
     """
-    images_dict = {}
-    for image in page_soup.find_all('img'):
-        if image.parent.name != "figure":
+    images_dict = {}            # create a dictionary for the images
+    for image in page_soup.find_all('img'):  # for an image it will find all of the img tags within the html of the page
+        if image.parent.name != "figure":  # looks at the parent of the image & looks specifically for the name "figure"
 
             temp = Image()
 
@@ -114,12 +114,12 @@ def image_file_path_info(tag, img):
     :param img: an instance of the Images class for storing the given  information
     :return: None
     """
-    file_path = tag.get("src")
-    file_split = file_path.split("/")
-    img.file_name = file_split[-1]
-    year = file_split[-3]
-    month = file_split[-2]
-    img.upload_date = month + "/" + year
+    file_path = tag.get("src")      # looks for the tag of src within its file path
+    file_split = file_path.split("/")   # splits the file path when it encounters a /
+    img.file_name = file_split[-1]      # retrieves the file name once the file has been split
+    year = file_split[-3]               # retrieves the year the image was uploaded from the file name
+    month = file_split[-2]              # retrieves the month the image was uploaded from the file name
+    img.upload_date = month + "/" + year  # uploads the date of the image based on month and year
 
 
 def image_resolution(tag, img):
@@ -138,20 +138,20 @@ def find_captions(page_soup):
     Finds all text that might be a caption (we don't know until we compare the id attribute with the images
     aria-describedby attribute)
     :param page_soup: Beautiful Soup object
-    :return: None
+    :return: captions_dict
     """
-    captions_dict = {}
-    for caption in page_soup.find_all('dd'):
-        temp = Caption()
-        temp.image_link = caption.get('id')
+    captions_dict = {}                            # a dictionary to store all of the captions
+    for caption in page_soup.find_all('dd'):     # for every caption look for the tag "dd"
+        temp = Caption()                       # temporarily stores a caption for class constructor
+        temp.image_link = caption.get('id')     # retrieves the caption through the tag of "id" which will be image link
         temp.caption = caption.string[5:-5]
-        captions_dict[temp.image_link] = copy.copy(temp)
-    for caption in page_soup.find_all('p'):
-        temp = Caption()
-        temp.image_link = caption.get('id')
-        temp.caption = caption.string
-        captions_dict[temp.image_link] = copy.copy(temp)
-    return captions_dict
+        captions_dict[temp.image_link] = copy.copy(temp)   # makes a shallow copy of the image link stored in the dictionary
+    for caption in page_soup.find_all('p'):         # for every caption find the "p" tags
+        temp = Caption()                      # temporarily stores a caption for class constructor
+        temp.image_link = caption.get('id')    # retrieves the caption through the tag of "id" which will be image link
+        temp.caption = caption.string           # converts caption to a string
+        captions_dict[temp.image_link] = copy.copy(temp)  # makes a shallow copy of the image link stored in the dictionary
+    return captions_dict                        # return the dicitonary
 
 
 def image_caption_linking(captions_dict, images_dict):
@@ -387,6 +387,9 @@ def bibliography_pairings(page_soup):
 
 
 def dir_dive():
+    """
+
+    """
     os.chdir("/Volumes/Elements/PMSS_ARCHIVE")
     for root, dirs, files in os.walk(".", topdown=False):
         for name in files:
@@ -395,6 +398,13 @@ def dir_dive():
 
 
 def pages_info(text):
+    """
+    This function is where most of our work takes place. Transcriptions,
+    the bibliography, captions, and images are all being ran through this function.
+    :param text: The text off of the web page that will be parsed
+    :return: Pages
+    """
+
     path = os.getcwd() + "/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     pages = []
@@ -416,33 +426,44 @@ def pages_info(text):
 
 
 def show_results(page_list):
-    for page in page_list:
-        for image in page.images.keys():
+    """
+    Shows the list of pages that we visit
+    :param page_list: A list of all the web pages
+    :return: None
+    """
+    for page in page_list:                # for every page in the list of pages
+        for image in page.images.keys():    # for an image in the pages return a list of keys from dictionary
             print(image + " ")
             print(page.images[image])
 
 
 def web(links_visited, web_url):
+    """
+    Web Crawler that will scan through the pmss webepage and find all different links from various pages
+    :param links_visited: A list that will store all of the links visited through the crawler
+    :param web_url: The Urls that will be visited
+    :return: None
+    """
     split_link = web_url.split(".")  # splits the link on a period to get domain
-    if len(split_link) > 1:
+    if len(split_link) > 1:       # base case to ensure that there is a link
         domain = split_link[0] + split_link[1]  # stores the domain
     else:
         return
     ext = ["jpg", "png", "tif"]
-    if domain != "https://pmsswpengine":
+    if domain != "https://pmsswpengine":   # base case we always need this url for our domain
+        return                          # it will only scrape data within the domain of pmss
+    if web_url in links_visited:  # base case if we have already visited the link we do not want to re-visit it over
         return
-    if web_url in links_visited:
+    if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
         return
-    if len(links_visited) > 500:
-        return
-    if web_url.split(".")[-1] in ext:
+    if web_url.split(".")[-1] in ext:  # split url if the end of url is in ext just return
         return
     links_visited.append(web_url)   # append the urls that we visit to a list of links visited
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
      (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}   # this is the user agent name
     result = requests.get(web_url, headers=headers)  # helps us avoid forbidden error code
     plain = result.text
-    print("{} images: ".format(web_url))
+    print(f"{web_url} images:  ")
     pages_info(plain)
     page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
     for link in page_soup.findAll('a'):  # finds all a tags within html
