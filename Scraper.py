@@ -1,22 +1,25 @@
 from bs4 import BeautifulSoup
-from Image import Image
+from PMSS_Image import PMSS_Image
 from Caption import Caption
 import copy
 import csv
+from os import listdir
+from os.path import isfile, join
 from Page import Page
 import numpy as np
+import requests
 import os
-from os.path import isfile, join
-from os import listdir
+import sys
+from PIL import Image, ExifTags
+from PIL.TiffTags import TAGS
 
 
-
-def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
+def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
     """
-    levenshtein_ratio_and_distance:
+    Levenshtein_ratio_and_distance:
     Calculates levenshtein distance between two strings.
     If ratio_calc = True, the function computes the
-    levenshtein distance ratio of similarity between two strings
+    Levenshtein distance ratio of similarity between two strings
     For all i and j, distance[i,j] will contain the Levenshtein
     distance between the first i characters of s and the
     first j characters of t
@@ -69,25 +72,27 @@ def image_info(page_soup):
     :param page_soup: A Beautiful Soup object
     :return: A dictionary containing all of the images from the page
     """
-    images_dict = {}
-    for image in page_soup.find_all('img'):
-        temp = Image()
+    images_dict = {}            # create a dictionary for the images
+    for image in page_soup.find_all('img'):  # for an image it will find all of the img tags within the html of the page
+        if image.parent.name != "figure":  # looks at the parent of the image & looks specifically for the name "figure"
 
-        # Pull out the id that will be used to find this image's caption
-        caption_link(image, temp)
+            temp = PMSS_Image()
 
-        # Pull the filename and upload date for this image
-        image_file_path_info(image, temp)
+            # Pull out the id that will be used to find this image's caption
+            caption_link(image, temp)
 
-        # Record the resolution information for this image
-        image_resolution(image, temp)
+            # Pull the filename and upload date for this image
+            image_file_path_info(image, temp)
 
-        # If resolution information is in the filename, strip that information out
-        temp.strip_resolution()
+            # Record the resolution information for this image
+            image_resolution(image, temp)
 
-        if temp.file_name != "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg":  # Ignore the header image
-            # Copy the image to a dictionary
-            images_dict[temp.file_name[:-len(temp.file_name.split(".")[-1]) - 1].lower()] = copy.copy(temp)
+            # If resolution information is in the filename, strip that information out
+            temp.strip_resolution()
+
+            if temp.file_name != "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg":  # Ignore the header image
+                # Copy the image to a dictionary
+                images_dict[temp.file_name[:-len(temp.file_name.split(".")[-1]) - 1].lower()] = copy.copy(temp)
     return images_dict
 
 
@@ -111,12 +116,12 @@ def image_file_path_info(tag, img):
     :param img: an instance of the Images class for storing the given  information
     :return: None
     """
-    file_path = tag.get("src")
-    file_split = file_path.split("/")
-    img.file_name = file_split[-1]
-    year = file_split[-3]
-    month = file_split[-2]
-    img.upload_date = month + "/" + year
+    file_path = tag.get("src")      # looks for the tag of src within its file path
+    file_split = file_path.split("/")   # splits the file path when it encounters a /
+    img.file_name = file_split[-1]      # retrieves the file name once the file has been split
+    year = file_split[-3]               # retrieves the year the image was uploaded from the file name
+    month = file_split[-2]              # retrieves the month the image was uploaded from the file name
+    img.upload_date = month + "/" + year  # uploads the date of the image based on month and year
 
 
 def image_resolution(tag, img):
@@ -135,20 +140,20 @@ def find_captions(page_soup):
     Finds all text that might be a caption (we don't know until we compare the id attribute with the images
     aria-describedby attribute)
     :param page_soup: Beautiful Soup object
-    :return: None
+    :return: captions_dict
     """
-    captions_dict = {}
-    for caption in page_soup.find_all('dd'):
-        temp = Caption()
-        temp.image_link = caption.get('id')
+    captions_dict = {}                            # a dictionary to store all of the captions
+    for caption in page_soup.find_all('dd'):     # for every caption look for the tag "dd"
+        temp = Caption()                       # temporarily stores a caption for class constructor
+        temp.image_link = caption.get('id')     # retrieves the caption through the tag of "id" which will be image link
         temp.caption = caption.string[5:-5]
-        captions_dict[temp.image_link] = copy.copy(temp)
-    for caption in page_soup.find_all('p'):
-        temp = Caption()
-        temp.image_link = caption.get('id')
-        temp.caption = caption.string
-        captions_dict[temp.image_link] = copy.copy(temp)
-    return captions_dict
+        captions_dict[temp.image_link] = copy.copy(temp)   # makes a shallow copy of the image link stored in the dictionary
+    for caption in page_soup.find_all('p'):         # for every caption find the "p" tags
+        temp = Caption()                      # temporarily stores a caption for class constructor
+        temp.image_link = caption.get('id')    # retrieves the caption through the tag of "id" which will be image link
+        temp.caption = caption.string           # converts caption to a string
+        captions_dict[temp.image_link] = copy.copy(temp)  # makes a shallow copy of the image link stored in the dictionary
+    return captions_dict                        # return the dicitonary
 
 
 def image_caption_linking(captions_dict, images_dict):
@@ -174,10 +179,15 @@ def find_transcriptions(page_soup, img_dict):
     """
     content = ""  # This will contain the html from the div tag where class == page-content
     all_divs = page_soup.find_all("div")  # finds all the tags that hold div
+    article_tags = page_soup.find_all("article")
     header_tags = ["h1", "h2", "h3", "h4", "h5", "h6"]  # these are the only tags we are concerned about
     recording = False  # Boolean for checking if we are in transcript
     current_file = ""  # The image we are associating our transcript with
     image_index = 0  # The index of the file we are looking at
+    for article in article_tags:
+        if article.get("class"):
+            if "category-cabbage_main" in article["class"]:
+                return
     for div in all_divs:  # look specifically for the div that contains
         if div.get("class"):  # the entry-content because this will hold our transcripts
             if div.get("class")[0] == "entry-content":  # content will hold the correct tag
@@ -337,7 +347,7 @@ def write_csv(page_list):
             if write_page.lower() == "y":
 
                 ext_len = len(page.html.split(".")[-1])
-                csv_name = page.html[:-ext_len-1] + ".csv"
+                csv_name = page.html[:-ext_len - 1] + ".csv"
 
                 with open(csv_name, 'w') as csvfile:
                     file_writer = csv.writer(csvfile)
@@ -355,73 +365,198 @@ def bibliography_pairings(page_soup):
     :param page_soup: Beautiful Soup Object
     :return: None
     """
-    rows = page_soup.tbody  # the rows of the table will be within the tbody of the html
+    rows = page_soup.find_all("div")  # the rows of the table will be within the tbody of the html
     count_data = 0
     bibliography_dict = {}
+    table_row_titles = ["title", "alt. title", "identifier", "creator", "alt. creator", "subject keyword",
+                        "subject lcsh", "date digital", "date",
+                        "publisher", "contributor", "type", "format", "source", "language", "relation",
+                        "coverage temporal", "coverage Spatial", "rights", "donor", "description", "acquisition",
+                        "citation", "processed by", "last updated", "bibliography"]
     title = ""  # variables to store the information of the data in the rows
     info = ""
     if rows:
         for row in rows.children:  # gets the child tag of table row
             if row != "\n":
-                for table_data in row.children:  # gets the child tag of table data
+                for table_data in row.contents:  # gets the child tag of table data
                     if table_data != "\n":
-                        for p in table_data.children:  # gets the information/tags in the tag p
-                            if p != "\n":
+                        get_tags_text(table_data)
+                        if len(table_data.contents) != 0:
+                            for p in table_data.children:  # gets the information/tags in the tag p
+                                if p != "\n":
+                                    # store the information two at a time
+                                    if count_data == 0:
+                                        title = p.string  # if the count is 0 then put the information in variable 1
+                                        count_data += 1
+                                    elif count_data != 0:  # if the count is not 0 then put the information in variable 2
+                                        info = p.string
+                                        count_data += 1
+                        else:
+                            if table_data.string != "\n":
                                 # store the information two at a time
                                 if count_data == 0:
-                                    title = p.string  # if the count is 0 then put the information in variable 1
-                                    count_data += 1
+                                    if not table_data.string:
+                                        title = "None"
+                                        count_data += 1
+                                    else:
+                                        title = table_data.string  # if the count is 0 then put the information in variable 1
+                                        count_data += 1
                                 elif count_data != 0:  # if the count is not 0 then put the information in variable 2
-                                    info = p.string
-                                    count_data += 1
-            if count_data == 2:  # if count is 2 then reset the count
+                                    if not table_data.string:
+                                        info = "None"
+                                        count_data += 1
+                                    else:
+                                        info = table_data.string
+                                        count_data += 1
+            if count_data > 1:  # if count is 2 then reset the count
                 count_data = 0
                 bibliography_dict[title] = info  # store variables into the dictionary with key and value
                 title = ""
-                info = ""
-
+                if info == "KATHERINE B. WRIGHT":
+                    info = ""
+                else:
+                    info = ""
+    for key in bibliography_dict.keys():
+        if key.lower() not in table_row_titles:
+            return
     return bibliography_dict  # the dictionary of the bibliography will be returned
 
 
 def dir_dive():
     os.chdir("/Volumes/Elements/PMSS_ARCHIVE")
+    tifs = []
+    img_count = 0
     for root, dirs, files in os.walk(".", topdown=False):
         for name in files:
-            if name[-4:] == ".tif":
-                print(name)
+            if name[-4:] == ".tif" or name[-4:] == ".jpg":
+                tifs.append(name[:-4])
+                img_count += 1
+    print(img_count)
+    return tifs
 
 
-def pages_info():
+def compare_page_to_hdd(pages, tif_list):
+    for page in pages:
+        for image in page.images.keys():
+            if image in tif_list:
+                print("{} from {}: True".format(image, page.html))
+            else:
+                print("{} from {}: False".format(image, page.html))
+
+
+def extract_image_info():
+    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_PHOTOS/DSCF0014.jpg")
+    exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
+    print(exif)
+    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_13_education/education_series_13/jpg_educat_series_13/1940s_unknown_ed_obligation_015.jpg")
+    exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
+    print(exif)
+    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_REPORTS/1937-38_annual_board_report/jpg_1937_38_annual_board/1937-38_boar002.jpg")
+    if img._getexif():
+        exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
+        print(exif)
+
+    with Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_13_education/little_school/little_school_001.tif") as img:
+        meta_dict = {TAGS[key]: img.tag[key] for key in img.tag.keys()}
+        print(meta_dict)
+
+
+def pages_info(text, url):
     path = os.getcwd() + "/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     pages = []
 
-    for file in onlyfiles:
-        if file != ".DS_Store":
-            current_page = Page()
-            f = open(path + file)
-            web_page = BeautifulSoup(f, 'html.parser')
-            current_page.images = image_info(web_page)
-            captions = find_captions(web_page)
-            image_caption_linking(captions, current_page.images)
-            current_page.bibliography = bibliography_pairings(web_page)
-            current_page.html = file
-            find_transcriptions(web_page, current_page.images)
-            pages.append(copy.copy(current_page))
+    # for file in onlyfiles:
+    #     if file != ".DS_Store":
+    current_page = Page()
+    # f = open(path + file)
+    web_page = BeautifulSoup(text, 'html.parser')
+    current_page.images = image_info(web_page)
+    captions = find_captions(web_page)
+    image_caption_linking(captions, current_page.images)
+    # current_page.bibliography = bibliography_pairings(web_page)
+    current_page.html = url
+    find_transcriptions(web_page, current_page.images)
+    pages.append(copy.copy(current_page))
+    show_results(pages)
     return pages
 
 
 def show_results(page_list):
-    for page in page_list:
-        for image in page.images.keys():
-            print(image + " ")
+    """
+    Shows the list of pages that we visit
+    :param page_list: A list of all the web pages
+    :return: None
+    """
+    for page in page_list:                # for every page in the list of pages
+        print(page.html + "\n")
+        page.view_bibliography()
+        print()
+        for image in page.images.keys():    # for an image in the pages return a list of keys from dictionary
+            print(image)
             print(page.images[image])
 
 
+def web(links_visited, web_url):
+    """
+    Web Crawler that will scan through the pmss webepage and find all different links from various pages
+    :param links_visited: A list that will store all of the links visited through the crawler
+    :param web_url: The Urls that will be visited
+    :return: None
+    """
+    split_link = web_url.split(".")  # splits the link on a period to get domain
+    if len(split_link) > 1:       # base case to ensure that there is a link
+        domain = split_link[0] + split_link[1]  # stores the domain
+    else:
+        return
+    ext = ["jpg", "png", "tif"]
+    if domain != "https://pmsswpengine":   # base case we always need this url for our domain
+        return                          # it will only scrape data within the domain of pmss
+    if web_url in links_visited:  # base case if we have already visited the link we do not want to re-visit it over
+        return
+    if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
+        return
+    if web_url.split(".")[-1] in ext:  # split url if the end of url is in ext just return
+        return
+    links_visited.append(web_url)   # append the urls that we visit to a list of links visited
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
+     (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}   # this is the user agent name
+    result = requests.get(web_url, headers=headers)  # helps us avoid forbidden error code
+    plain = result.text
+    # print(f"{web_url} images:  ")
+    pages_info(plain, web_url)
+    page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
+    for link in page_soup.findAll('a'):  # finds all a tags within html
+        if not link.get("class"):    # avoid the html tag with class
+            if len(links_visited) > 500:
+                return
+            # title_link = link.get('title')  # gets the title of the link
+            # print(title_link)
+            if link.contents:
+                if link.contents[0].name != "img":
+                    if link.parent:
+                        try:
+                            if link.parent.get("class")[0] == "must-log-in":
+                                return
+                        except TypeError:
+                            pass
+                    links_destination = link.get('href')  # gets the href and this determines the links destination
+                    # print(links_destination)
+                    web(links_visited, links_destination)  # recursive call to keep calling the different links
+
+
 def main():
-    pmss_pages = pages_info()
-    show_results(pmss_pages)
-    write_csv(pmss_pages)
+    path = os.getcwd() + "/html/"
+    # file = "ELIZABETH C. HENCH - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # file_2 = "KATHERINE B. WRIGHT - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # file_3 = "PMSS BOT 1919 - First Meeting Held at the School - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # f = open(path + file)
+    # pmss_pages = pages_info(f, file)
+    # show_results(pmss_pages)
+    #  write_csv(pmss_pages)
+    extract_image_info()
+    # links_visited = []  # list of links visited
+    # web(links_visited, 'https://pmss.wpengine.com/')
 
 
 if __name__ == "__main__":
