@@ -177,10 +177,15 @@ def find_transcriptions(page_soup, img_dict):
     """
     content = ""  # This will contain the html from the div tag where class == page-content
     all_divs = page_soup.find_all("div")  # finds all the tags that hold div
+    article_tags = page_soup.find_all("article")
     header_tags = ["h1", "h2", "h3", "h4", "h5", "h6"]  # these are the only tags we are concerned about
     recording = False  # Boolean for checking if we are in transcript
     current_file = ""  # The image we are associating our transcript with
     image_index = 0  # The index of the file we are looking at
+    for article in article_tags:
+        if article.get("class"):
+            if "category-cabbage_main" in article["class"]:
+                return
     for div in all_divs:  # look specifically for the div that contains
         if div.get("class"):  # the entry-content because this will hold our transcripts
             if div.get("class")[0] == "entry-content":  # content will hold the correct tag
@@ -358,31 +363,60 @@ def bibliography_pairings(page_soup):
     :param page_soup: Beautiful Soup Object
     :return: None
     """
-    rows = page_soup.tbody  # the rows of the table will be within the tbody of the html
+    rows = page_soup.find_all("div")  # the rows of the table will be within the tbody of the html
     count_data = 0
     bibliography_dict = {}
+    table_row_titles = ["title", "alt. title", "identifier", "creator", "alt. creator", "subject keyword",
+                        "subject lcsh", "date digital", "date",
+                        "publisher", "contributor", "type", "format", "source", "language", "relation",
+                        "coverage temporal", "coverage Spatial", "rights", "donor", "description", "acquisition",
+                        "citation", "processed by", "last updated", "bibliography"]
     title = ""  # variables to store the information of the data in the rows
     info = ""
     if rows:
         for row in rows.children:  # gets the child tag of table row
             if row != "\n":
-                for table_data in row.children:  # gets the child tag of table data
+                for table_data in row.contents:  # gets the child tag of table data
                     if table_data != "\n":
-                        for p in table_data.children:  # gets the information/tags in the tag p
-                            if p != "\n":
+                        get_tags_text(table_data)
+                        if len(table_data.contents) != 0:
+                            for p in table_data.children:  # gets the information/tags in the tag p
+                                if p != "\n":
+                                    # store the information two at a time
+                                    if count_data == 0:
+                                        title = p.string  # if the count is 0 then put the information in variable 1
+                                        count_data += 1
+                                    elif count_data != 0:  # if the count is not 0 then put the information in variable 2
+                                        info = p.string
+                                        count_data += 1
+                        else:
+                            if table_data.string != "\n":
                                 # store the information two at a time
                                 if count_data == 0:
-                                    title = p.string  # if the count is 0 then put the information in variable 1
-                                    count_data += 1
+                                    if not table_data.string:
+                                        title = "None"
+                                        count_data += 1
+                                    else:
+                                        title = table_data.string  # if the count is 0 then put the information in variable 1
+                                        count_data += 1
                                 elif count_data != 0:  # if the count is not 0 then put the information in variable 2
-                                    info = p.string
-                                    count_data += 1
-            if count_data == 2:  # if count is 2 then reset the count
+                                    if not table_data.string:
+                                        info = "None"
+                                        count_data += 1
+                                    else:
+                                        info = table_data.string
+                                        count_data += 1
+            if count_data > 1:  # if count is 2 then reset the count
                 count_data = 0
                 bibliography_dict[title] = info  # store variables into the dictionary with key and value
                 title = ""
-                info = ""
-
+                if info == "KATHERINE B. WRIGHT":
+                    info = ""
+                else:
+                    info = ""
+    for key in bibliography_dict.keys():
+        if key.lower() not in table_row_titles:
+            return
     return bibliography_dict  # the dictionary of the bibliography will be returned
 
 
@@ -397,7 +431,7 @@ def dir_dive():
                 print(name)
 
 
-def pages_info(text):
+def pages_info(text, url):
     """
     This function is where most of our work takes place. Transcriptions,
     the bibliography, captions, and images are all being ran through this function.
@@ -417,8 +451,8 @@ def pages_info(text):
     current_page.images = image_info(web_page)
     captions = find_captions(web_page)
     image_caption_linking(captions, current_page.images)
-    current_page.bibliography = bibliography_pairings(web_page)
-    # current_page.html = file
+    # current_page.bibliography = bibliography_pairings(web_page)
+    current_page.html = url
     find_transcriptions(web_page, current_page.images)
     pages.append(copy.copy(current_page))
     show_results(pages)
@@ -432,8 +466,11 @@ def show_results(page_list):
     :return: None
     """
     for page in page_list:                # for every page in the list of pages
+        print(page.html + "\n")
+        page.view_bibliography()
+        print()
         for image in page.images.keys():    # for an image in the pages return a list of keys from dictionary
-            print(image + " ")
+            print(image)
             print(page.images[image])
 
 
@@ -463,8 +500,8 @@ def web(links_visited, web_url):
      (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}   # this is the user agent name
     result = requests.get(web_url, headers=headers)  # helps us avoid forbidden error code
     plain = result.text
-    print(f"{web_url} images:  ")
-    pages_info(plain)
+    # print(f"{web_url} images:  ")
+    pages_info(plain, web_url)
     page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
     for link in page_soup.findAll('a'):  # finds all a tags within html
         if not link.get("class"):    # avoid the html tag with class
@@ -486,9 +523,14 @@ def web(links_visited, web_url):
 
 
 def main():
-    # pmss_pages = pages_info()
+    path = os.getcwd() + "/html/"
+    # file = "ELIZABETH C. HENCH - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # file_2 = "KATHERINE B. WRIGHT - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # file_3 = "PMSS BOT 1919 - First Meeting Held at the School - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # f = open(path + file)
+    # pmss_pages = pages_info(f, file)
     # show_results(pmss_pages)
-    # write_csv(pmss_pages)
+    #  write_csv(pmss_pages)
 
     links_visited = []  # list of links visited
     web(links_visited, 'https://pmss.wpengine.com/')
