@@ -26,7 +26,7 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
     # Initialize matrix of zeros
     rows = len(s)+1
     cols = len(t)+1
-    distance = np.zeros((rows,cols),dtype = int)
+    distance = np.zeros((rows, cols), dtype=int)
     row = 0
     col = 0
 
@@ -35,7 +35,7 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
 
     # Populate matrix of zeros with the indices of each character of both strings
     for i in range(1, rows):
-        for k in range(1,cols):
+        for k in range(1, cols):
             distance[i][0] = i
             distance[0][k] = k
 
@@ -47,17 +47,17 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
             else:
                 # In order to align the results with those of the Python Levenshtein package, if we choose to calculate the ratio
                 # the cost of a substitution is 2. If we calculate just distance, then the cost of a substitution is 1.
-                if ratio_calc == True:
+                if ratio_calc:
                     cost = 2
                 else:
                     cost = 1
             distance[row][col] = min(distance[row-1][col] + 1,      # Cost of deletions
-                                 distance[row][col-1] + 1,          # Cost of insertions
-                                 distance[row-1][col-1] + cost)     # Cost of substitutions
-    if ratio_calc == True:
+                                     distance[row][col-1] + 1,          # Cost of insertions
+                                     distance[row-1][col-1] + cost)     # Cost of substitutions
+    if ratio_calc:
         # Computation of the Levenshtein Distance Ratio
-        Ratio = ((len(s)+len(t)) - distance[row][col]) / (len(s)+len(t))
-        return Ratio
+        ratio = ((len(s)+len(t)) - distance[row][col]) / (len(s)+len(t))
+        return ratio
     else:
         # print(distance) # Uncomment if you want to see the matrix showing how the algorithm computes the cost of deletions,
         # insertions and/or substitutions
@@ -310,18 +310,17 @@ def find_transcriptions(page_soup, img_dict):
 
 def get_tags_text(tag):
     """
-    Recursive function for traveling down a tag and all of it's decedents to extract all of the text
+    Recursive function for traveling down a tag and all of it's descendents to extract all of the text
     :param tag: Beautiful Soup object that we will be extracting all of the text from
     :return base case: Return the string of current tag
     :return for the function: Return the full transcript
     """
-    if tag.string:
-        return tag.string
-    transcript = ""
-    
-    for child in tag.children:
-        transcript = transcript + get_tags_text(child)
-    return transcript
+    if tag.string:  # if we are at the last descendent (the text)
+        return tag.string  # return the string
+    transcript = ""  # a variable to build wthe full text into
+    for child in tag.children:  # for each of the current tag's children
+        transcript = transcript + get_tags_text(child)  # recursive function call to build the transcript
+    return transcript  # return the full text
 
 
 def record_transcript(img_dict, recording_state, current_file, tag):
@@ -332,11 +331,10 @@ def record_transcript(img_dict, recording_state, current_file, tag):
     :param current_file: Holds a string for transcription to ensure it goes to correct position in dictionary
     :param tag: Beautiful Soup Object
     :return: None
-    """  # if the recording state and current file are not empty
+    """
+    # if the recording state and current file are not empty
     if recording_state and current_file != "" and tag.name != "div":  # and the tag name is not div
-        img_dict[current_file].transcription += str(
-            # we need to store the transcription and text into the image dictionary
-            tag.string)  # associate image with the transcript
+        img_dict[current_file].transcription += str(tag.string)  # associate image with the transcript
 
 
 def write_csv(page_list):
@@ -345,35 +343,38 @@ def write_csv(page_list):
     :param page_list: A list of pages that will have their contents output
     :return:
     """
-    to_csv = input("Do you want to create csv files? (y/n): ")
-    csv_path = os.getcwd() + "/csv/"
-    os.chdir(csv_path)
-    if to_csv.lower() == "y":
-        for page in page_list:
-            write_page = input("Do you want to output {}? (y/n): ".format(page.html))
-            if write_page.lower() == "y":
+    to_csv = input("Do you want to create csv files? (y/n): ")  # input check for if the user wants to output csv files
+    csv_path = os.getcwd() + "/csv/"  # using the os module, the current directory plus /csv/ is where they will be stored
+    try:  # try to go into the csv directory
+        os.chdir(csv_path)
+    except FileNotFoundError:  # if the csv directory doesnt exist
+        os.mkdir(csv_path)  # make the csv directory
+        os.chdir(csv_path)  # change to the csv directory
+    if to_csv.lower() == "y":  # if the user responded yes
+        for page in page_list:  # for each page in our list of page objects
+            write_page = input(f"Do you want to output {page.html}? (y/n): ")  # Ask the user if they want to output the page
+            if write_page.lower() == "y":  # if the user said yes to output the page
+                ext_len = len(page.html.split(".")[-1])  # get the length of the extension
+                csv_name = page.html[:-ext_len - 1] + ".csv"  # remove the current extension and add .csv to the end
 
-                ext_len = len(page.html.split(".")[-1])
-                csv_name = page.html[:-ext_len - 1] + ".csv"
-
-                with open(csv_name, 'w') as csvfile:
-                    file_writer = csv.writer(csvfile)
-                    csv_data = [["Filename", "Transcription", "Upload Date"]]
-                    for image in page.images.keys():
+                with open(csv_name, 'w') as csvfile:  # open csv file for the page we are currently on
+                    file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
+                    csv_data = [["Filename", "Transcription", "Upload Date"]]  # the first row are the column headings
+                    for image in page.images.keys():  # for each image in our images dictionary
                         csv_data.append([page.images[image].file_name, "\"" + page.images[image].transcription + "\"",
-                                         page.images[image].upload_date])
-                    file_writer.writerows(csv_data)
-                    csvfile.close()
+                                         page.images[image].upload_date])  # append the file name, transcription, and upload date
+                    file_writer.writerows(csv_data)  # write the information to the file
+                    csvfile.close()  # close the file
 
 
 def bibliography_pairings(page_soup):
     """
     Pairs the information in the table of the bibliography together with the appropriate data.
     :param page_soup: Beautiful Soup Object
-    :return: None
+    :return: A dictionary containing all of the bibliography pairings
     """
     rows = page_soup.tbody # the rows of the table will be within the tbody of the html
-    count_data = 0
+    count_data = 0  # used to store data in twos (count data will increment to 2 and then reset to 0 when data is saved
     bibliography_dict = {}
     table_row_titles = ["title", "alt. title", "identifier", "creator", "alt. creator", "subject keyword",
                         "subject lcsh", "date digital", "date",
@@ -430,13 +431,17 @@ def bibliography_pairings(page_soup):
 
 def dir_dive():
     """
-
+    A function to find all the names of .tif's and .jpg's
+    :return: A list of names of files
     """
-    os.chdir("/Volumes/Elements/PMSS_ARCHIVE")
-    for root, dirs, files in os.walk(".", topdown=False):
-        for name in files:
-            if name[-4:] == ".tif":
+    archived_images = []
+    os.chdir("/Volumes/Elements/PMSS_ARCHIVE")  # Change to the archive directory
+    for root, dirs, files in os.walk(".", topdown=False):  # Traverse all of the files in every subdirectory
+        for name in files:  # for each name in our files
+            if name[-4:] == ".tif":  # if the file's extension is a tif
                 print(name)
+                print(root)
+                print(dirs)
 
 
 def pages_info(text, url):
