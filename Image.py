@@ -12,11 +12,8 @@ class Image:
         Returns all of the class's variables in a string
         :return: a string containing all of the class's variables
         """
-        return "File name: {}\nCaption: {}\nResized resolution: {}x{}" \
-               "\nTranscription: {}\nUpload date: {}\n\n".format(self.file_name, self.caption,
-                                                                 self.image_resized_resolution[0],
-                                                                 self.image_resized_resolution[1],
-                                                                 self.transcription, self.upload_date)
+        return f"File name: {self.file_name}\nCaption: {self.caption}\nResized resolution: {self.image_resized_resolution[0]}x{self.image_resized_resolution[1]}" \
+               f"\nTranscription: {self.transcription}\nUpload date: {self.upload_date}\n\n"
 
     def strip_resolution(self):
         """

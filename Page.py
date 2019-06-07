@@ -5,5 +5,6 @@ class Page:
         self.html = ""
 
     def view_bibliography(self):
-        for row_title in self.bibliography.keys():
-            print(f"{row_title}: {self.bibliography[row_title]}")
+        if self.bibliography:
+            for row_title in self.bibliography:
+                print(f"{row_title}: {self.bibliography[row_title]}")
