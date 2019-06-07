@@ -12,11 +12,8 @@ class PMSS_Image:
         Returns all of the class's variables in a string
         :return: a string containing all of the class's variables
         """
-        return "File name: {}\nCaption: {}\nResized resolution: {}x{}" \
-               "\nTranscription: {}\nUpload date: {}\n\n".format(self.file_name, self.caption,
-                                                                 self.image_resized_resolution[0],
-                                                                 self.image_resized_resolution[1],
-                                                                 self.transcription, self.upload_date)
+        return f"File name: {self.file_name}\nCaption: {self.caption}\nResized resolution: {self.image_resized_resolution[0]}x{self.image_resized_resolution[1]}" \
+               f"\nTranscription: {self.transcription}\nUpload date: {self.upload_date}\n\n"
 
     def strip_resolution(self):
         """
@@ -24,7 +21,7 @@ class PMSS_Image:
         :param self: An Image object
         :return: None
         """
-        final_file_pieces = []  # puts the pieces of the final file into a list
+        final_file_pieces = []
         check = []
         resolution = ""
         ext = self.file_name[-4:]  # Assuming the extension is 3 characters long save the last few characters

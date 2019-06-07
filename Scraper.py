@@ -12,6 +12,7 @@ import os
 import sys
 from PIL import Image, ExifTags
 from PIL.TiffTags import TAGS
+import time
 
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
@@ -25,8 +26,8 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
     first j characters of t
     """
     # Initialize matrix of zeros
-    rows = len(s) + 1
-    cols = len(t) + 1
+    rows = len(s)+1
+    cols = len(t)+1
     distance = np.zeros((rows, cols), dtype=int)
     row = 0
     col = 0
@@ -34,7 +35,7 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
     if s == "" or t == "":
         return 0
 
-    # Populate matrix of zeros with the indeces of each character of both strings
+    # Populate matrix of zeros with the indices of each character of both strings
     for i in range(1, rows):
         for k in range(1, cols):
             distance[i][0] = i
@@ -43,22 +44,22 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
     # Iterate over the matrix to compute the cost of deletions,insertions and/or substitutions
     for col in range(1, cols):
         for row in range(1, rows):
-            if s[row - 1] == t[col - 1]:
+            if s[row-1] == t[col-1]:
                 cost = 0  # If the characters are the same in the two strings in a given position [i,j] then the cost is 0
             else:
                 # In order to align the results with those of the Python Levenshtein package, if we choose to calculate the ratio
                 # the cost of a substitution is 2. If we calculate just distance, then the cost of a substitution is 1.
-                if ratio_calc == True:
+                if ratio_calc:
                     cost = 2
                 else:
                     cost = 1
-            distance[row][col] = min(distance[row - 1][col] + 1,  # Cost of deletions
-                                     distance[row][col - 1] + 1,  # Cost of insertions
-                                     distance[row - 1][col - 1] + cost)  # Cost of substitutions
-    if ratio_calc == True:
+            distance[row][col] = min(distance[row-1][col] + 1,      # Cost of deletions
+                                     distance[row][col-1] + 1,          # Cost of insertions
+                                     distance[row-1][col-1] + cost)     # Cost of substitutions
+    if ratio_calc:
         # Computation of the Levenshtein Distance Ratio
-        Ratio = ((len(s) + len(t)) - distance[row][col]) / (len(s) + len(t))
-        return Ratio
+        ratio = ((len(s)+len(t)) - distance[row][col]) / (len(s)+len(t))
+        return ratio
     else:
         # print(distance) # Uncomment if you want to see the matrix showing how the algorithm computes the cost of deletions,
         # insertions and/or substitutions
@@ -74,9 +75,9 @@ def image_info(page_soup):
     """
     images_dict = {}            # create a dictionary for the images
     for image in page_soup.find_all('img'):  # for an image it will find all of the img tags within the html of the page
-        if image.parent.name != "figure":  # looks at the parent of the image & looks specifically for the name "figure"
+        if image.get("src"):
 
-            temp = PMSS_Image()
+            temp = Image()
 
             # Pull out the id that will be used to find this image's caption
             caption_link(image, temp)
@@ -89,6 +90,11 @@ def image_info(page_soup):
 
             # If resolution information is in the filename, strip that information out
             temp.strip_resolution()
+
+            if image.parent.name == "figure":
+                for tag in image.parent.children:
+                    if tag.name == "figcaption":
+                        temp.caption = tag.string
 
             if temp.file_name != "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg":  # Ignore the header image
                 # Copy the image to a dictionary
@@ -153,6 +159,7 @@ def find_captions(page_soup):
         temp.image_link = caption.get('id')    # retrieves the caption through the tag of "id" which will be image link
         temp.caption = caption.string           # converts caption to a string
         captions_dict[temp.image_link] = copy.copy(temp)  # makes a shallow copy of the image link stored in the dictionary
+
     return captions_dict                        # return the dicitonary
 
 
@@ -165,9 +172,10 @@ def image_caption_linking(captions_dict, images_dict):
     """
     for caption in captions_dict.keys():  # for every caption of an image in the caption dictionary
         for image in images_dict.keys():  # for every image in the image dictionary
-            if captions_dict[caption].image_link == images_dict[
-                    image].caption_link:  # if the caption dictionary matches the image dictionary
-                images_dict[image].caption = captions_dict[caption].caption  # then the image will go with the caption
+            if not images_dict[image].caption:
+                if captions_dict[caption].image_link == images_dict[
+                        image].caption_link:  # if the caption dictionary matches the image dictionary
+                    images_dict[image].caption = captions_dict[caption].caption  # then the image will go with the caption
 
 
 def find_transcriptions(page_soup, img_dict):
@@ -304,17 +312,17 @@ def find_transcriptions(page_soup, img_dict):
 
 def get_tags_text(tag):
     """
-    Recursive function for traveling down a tag and all of it's decedents to extract all of the text
+    Recursive function for traveling down a tag and all of it's descendents to extract all of the text
     :param tag: Beautiful Soup object that we will be extracting all of the text from
     :return base case: Return the string of current tag
     :return for the function: Return the full transcript
     """
-    if tag.string:
-        return tag.string
-    transcript = ""
-    for child in tag.children:
-        transcript = transcript + get_tags_text(child)
-    return transcript
+    if tag.string:  # if we are at the last descendent (the text)
+        return tag.string  # return the string
+    transcript = ""  # a variable to build wthe full text into
+    for child in tag.children:  # for each of the current tag's children
+        transcript = transcript + get_tags_text(child)  # recursive function call to build the transcript
+    return transcript  # return the full text
 
 
 def record_transcript(img_dict, recording_state, current_file, tag):
@@ -325,11 +333,10 @@ def record_transcript(img_dict, recording_state, current_file, tag):
     :param current_file: Holds a string for transcription to ensure it goes to correct position in dictionary
     :param tag: Beautiful Soup Object
     :return: None
-    """  # if the recording state and current file are not empty
+    """
+    # if the recording state and current file are not empty
     if recording_state and current_file != "" and tag.name != "div":  # and the tag name is not div
-        img_dict[current_file].transcription += str(
-            # we need to store the transcription and text into the image dictionary
-            tag.string)  # associate image with the transcript
+        img_dict[current_file].transcription += str(tag.string)  # associate image with the transcript
 
 
 def write_csv(page_list):
@@ -338,40 +345,43 @@ def write_csv(page_list):
     :param page_list: A list of pages that will have their contents output
     :return:
     """
-    to_csv = input("Do you want to create csv files? (y/n): ")
-    csv_path = os.getcwd() + "/csv/"
-    os.chdir(csv_path)
-    if to_csv.lower() == "y":
-        for page in page_list:
-            write_page = input("Do you want to output {}? (y/n): ".format(page.html))
-            if write_page.lower() == "y":
+    to_csv = input("Do you want to create csv files? (y/n): ")  # input check for if the user wants to output csv files
+    csv_path = os.getcwd() + "/csv/"  # using the os module, the current directory plus /csv/ is where they will be stored
+    try:  # try to go into the csv directory
+        os.chdir(csv_path)
+    except FileNotFoundError:  # if the csv directory doesnt exist
+        os.mkdir(csv_path)  # make the csv directory
+        os.chdir(csv_path)  # change to the csv directory
+    if to_csv.lower() == "y":  # if the user responded yes
+        for page in page_list:  # for each page in our list of page objects
+            write_page = input(f"Do you want to output {page.html}? (y/n): ")  # Ask the user if they want to output the page
+            if write_page.lower() == "y":  # if the user said yes to output the page
+                ext_len = len(page.html.split(".")[-1])  # get the length of the extension
+                csv_name = page.html[:-ext_len - 1] + ".csv"  # remove the current extension and add .csv to the end
 
-                ext_len = len(page.html.split(".")[-1])
-                csv_name = page.html[:-ext_len - 1] + ".csv"
-
-                with open(csv_name, 'w') as csvfile:
-                    file_writer = csv.writer(csvfile)
-                    csv_data = [["Filename", "Transcription", "Upload Date"]]
-                    for image in page.images.keys():
+                with open(csv_name, 'w') as csvfile:  # open csv file for the page we are currently on
+                    file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
+                    csv_data = [["Filename", "Transcription", "Upload Date"]]  # the first row are the column headings
+                    for image in page.images.keys():  # for each image in our images dictionary
                         csv_data.append([page.images[image].file_name, "\"" + page.images[image].transcription + "\"",
-                                         page.images[image].upload_date])
-                    file_writer.writerows(csv_data)
-                    csvfile.close()
+                                         page.images[image].upload_date])  # append the file name, transcription, and upload date
+                    file_writer.writerows(csv_data)  # write the information to the file
+                    csvfile.close()  # close the file
 
 
 def bibliography_pairings(page_soup):
     """
     Pairs the information in the table of the bibliography together with the appropriate data.
     :param page_soup: Beautiful Soup Object
-    :return: None
+    :return: A dictionary containing all of the bibliography pairings
     """
-    rows = page_soup.find_all("div")  # the rows of the table will be within the tbody of the html
-    count_data = 0
+    rows = page_soup.tbody # the rows of the table will be within the tbody of the html
+    count_data = 0  # used to store data in twos (count data will increment to 2 and then reset to 0 when data is saved
     bibliography_dict = {}
     table_row_titles = ["title", "alt. title", "identifier", "creator", "alt. creator", "subject keyword",
                         "subject lcsh", "date digital", "date",
                         "publisher", "contributor", "type", "format", "source", "language", "relation",
-                        "coverage temporal", "coverage Spatial", "rights", "donor", "description", "acquisition",
+                        "coverage temporal", "coverage spatial", "rights", "donor", "description", "acquisition",
                         "citation", "processed by", "last updated", "bibliography"]
     title = ""  # variables to store the information of the data in the rows
     info = ""
@@ -412,17 +422,20 @@ def bibliography_pairings(page_soup):
                 count_data = 0
                 bibliography_dict[title] = info  # store variables into the dictionary with key and value
                 title = ""
-                if info == "KATHERINE B. WRIGHT":
-                    info = ""
-                else:
-                    info = ""
+                info = ""
     for key in bibliography_dict.keys():
+        if key == None:
+            return
         if key.lower() not in table_row_titles:
             return
     return bibliography_dict  # the dictionary of the bibliography will be returned
 
 
 def dir_dive():
+    """
+    A function to find all the names of .tif's and .jpg's
+    :return: A list of names of files
+    """
     os.chdir("/Volumes/Elements/PMSS_ARCHIVE")
     tifs = []
     img_count = 0
@@ -465,16 +478,12 @@ def pages_info(text, url):
     path = os.getcwd() + "/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     pages = []
-
-    # for file in onlyfiles:
-    #     if file != ".DS_Store":
     current_page = Page()
-    # f = open(path + file)
     web_page = BeautifulSoup(text, 'html.parser')
     current_page.images = image_info(web_page)
     captions = find_captions(web_page)
     image_caption_linking(captions, current_page.images)
-    # current_page.bibliography = bibliography_pairings(web_page)
+    current_page.bibliography = bibliography_pairings(web_page)
     current_page.html = url
     find_transcriptions(web_page, current_page.images)
     pages.append(copy.copy(current_page))
@@ -490,7 +499,7 @@ def show_results(page_list):
     """
     for page in page_list:                # for every page in the list of pages
         print(page.html + "\n")
-        page.view_bibliography()
+        # page.view_bibliography()
         print()
         for image in page.images.keys():    # for an image in the pages return a list of keys from dictionary
             print(image)
@@ -504,6 +513,8 @@ def web(links_visited, web_url):
     :param web_url: The Urls that will be visited
     :return: None
     """
+    if web_url == "https://pmss.wpengine.com/biography-a-z/elizabeth-c-hench/":
+        pass
     split_link = web_url.split(".")  # splits the link on a period to get domain
     if len(split_link) > 1:       # base case to ensure that there is a link
         domain = split_link[0] + split_link[1]  # stores the domain
@@ -545,19 +556,22 @@ def web(links_visited, web_url):
                     web(links_visited, links_destination)  # recursive call to keep calling the different links
 
 
+start_time = time.time()
+
+
 def main():
     path = os.getcwd() + "/html/"
-    # file = "ELIZABETH C. HENCH - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
-    # file_2 = "KATHERINE B. WRIGHT - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
-    # file_3 = "PMSS BOT 1919 - First Meeting Held at the School - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
-    # f = open(path + file)
-    # pmss_pages = pages_info(f, file)
+    file = "CONIFER INDEX - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # # file_2 = "KATHERINE B. WRIGHT - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # # file_3 = "PMSS BOT 1919 - First Meeting Held at the School - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    f = open(path + file)
+    pmss_pages = pages_info(f, file)
     # show_results(pmss_pages)
     #  write_csv(pmss_pages)
-    extract_image_info()
+
     # links_visited = []  # list of links visited
     # web(links_visited, 'https://pmss.wpengine.com/')
-
+    print(f"--- {time.time() - start_time} seconds ---")
 
 if __name__ == "__main__":
     main()
