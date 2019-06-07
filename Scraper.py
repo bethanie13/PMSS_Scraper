@@ -9,6 +9,7 @@ from Page import Page
 import numpy as np
 import requests
 import os
+import time
 
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
@@ -72,7 +73,7 @@ def image_info(page_soup):
     """
     images_dict = {}            # create a dictionary for the images
     for image in page_soup.find_all('img'):  # for an image it will find all of the img tags within the html of the page
-        if image.parent.name != "figure":  # looks at the parent of the image & looks specifically for the name "figure"
+        if image.get("src"):
 
             temp = Image()
 
@@ -87,6 +88,11 @@ def image_info(page_soup):
 
             # If resolution information is in the filename, strip that information out
             temp.strip_resolution()
+
+            if image.parent.name == "figure":
+                for tag in image.parent.children:
+                    if tag.name == "figcaption":
+                        temp.caption = tag.string
 
             if temp.file_name != "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg":  # Ignore the header image
                 # Copy the image to a dictionary
@@ -151,6 +157,7 @@ def find_captions(page_soup):
         temp.image_link = caption.get('id')    # retrieves the caption through the tag of "id" which will be image link
         temp.caption = caption.string           # converts caption to a string
         captions_dict[temp.image_link] = copy.copy(temp)  # makes a shallow copy of the image link stored in the dictionary
+
     return captions_dict                        # return the dicitonary
 
 
@@ -163,9 +170,10 @@ def image_caption_linking(captions_dict, images_dict):
     """
     for caption in captions_dict.keys():  # for every caption of an image in the caption dictionary
         for image in images_dict.keys():  # for every image in the image dictionary
-            if captions_dict[caption].image_link == images_dict[
-                    image].caption_link:  # if the caption dictionary matches the image dictionary
-                images_dict[image].caption = captions_dict[caption].caption  # then the image will go with the caption
+            if not images_dict[image].caption:
+                if captions_dict[caption].image_link == images_dict[
+                        image].caption_link:  # if the caption dictionary matches the image dictionary
+                    images_dict[image].caption = captions_dict[caption].caption  # then the image will go with the caption
 
 
 def find_transcriptions(page_soup, img_dict):
@@ -310,6 +318,7 @@ def get_tags_text(tag):
     if tag.string:
         return tag.string
     transcript = ""
+    
     for child in tag.children:
         transcript = transcript + get_tags_text(child)
     return transcript
@@ -363,13 +372,13 @@ def bibliography_pairings(page_soup):
     :param page_soup: Beautiful Soup Object
     :return: None
     """
-    rows = page_soup.find_all("div")  # the rows of the table will be within the tbody of the html
+    rows = page_soup.tbody # the rows of the table will be within the tbody of the html
     count_data = 0
     bibliography_dict = {}
     table_row_titles = ["title", "alt. title", "identifier", "creator", "alt. creator", "subject keyword",
                         "subject lcsh", "date digital", "date",
                         "publisher", "contributor", "type", "format", "source", "language", "relation",
-                        "coverage temporal", "coverage Spatial", "rights", "donor", "description", "acquisition",
+                        "coverage temporal", "coverage spatial", "rights", "donor", "description", "acquisition",
                         "citation", "processed by", "last updated", "bibliography"]
     title = ""  # variables to store the information of the data in the rows
     info = ""
@@ -410,11 +419,10 @@ def bibliography_pairings(page_soup):
                 count_data = 0
                 bibliography_dict[title] = info  # store variables into the dictionary with key and value
                 title = ""
-                if info == "KATHERINE B. WRIGHT":
-                    info = ""
-                else:
-                    info = ""
+                info = ""
     for key in bibliography_dict.keys():
+        if key == None:
+            return
         if key.lower() not in table_row_titles:
             return
     return bibliography_dict  # the dictionary of the bibliography will be returned
@@ -442,16 +450,12 @@ def pages_info(text, url):
     path = os.getcwd() + "/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     pages = []
-
-    # for file in onlyfiles:
-    #     if file != ".DS_Store":
     current_page = Page()
-    # f = open(path + file)
     web_page = BeautifulSoup(text, 'html.parser')
     current_page.images = image_info(web_page)
     captions = find_captions(web_page)
     image_caption_linking(captions, current_page.images)
-    # current_page.bibliography = bibliography_pairings(web_page)
+    current_page.bibliography = bibliography_pairings(web_page)
     current_page.html = url
     find_transcriptions(web_page, current_page.images)
     pages.append(copy.copy(current_page))
@@ -467,7 +471,7 @@ def show_results(page_list):
     """
     for page in page_list:                # for every page in the list of pages
         print(page.html + "\n")
-        page.view_bibliography()
+        # page.view_bibliography()
         print()
         for image in page.images.keys():    # for an image in the pages return a list of keys from dictionary
             print(image)
@@ -481,6 +485,8 @@ def web(links_visited, web_url):
     :param web_url: The Urls that will be visited
     :return: None
     """
+    if web_url == "https://pmss.wpengine.com/biography-a-z/elizabeth-c-hench/":
+        pass
     split_link = web_url.split(".")  # splits the link on a period to get domain
     if len(split_link) > 1:       # base case to ensure that there is a link
         domain = split_link[0] + split_link[1]  # stores the domain
@@ -521,20 +527,20 @@ def web(links_visited, web_url):
                     # print(links_destination)
                     web(links_visited, links_destination)  # recursive call to keep calling the different links
 
-
+start_time= time.time()
 def main():
     path = os.getcwd() + "/html/"
-    # file = "ELIZABETH C. HENCH - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
-    # file_2 = "KATHERINE B. WRIGHT - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
-    # file_3 = "PMSS BOT 1919 - First Meeting Held at the School - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
-    # f = open(path + file)
-    # pmss_pages = pages_info(f, file)
+    file = "CONIFER INDEX - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # # file_2 = "KATHERINE B. WRIGHT - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # # file_3 = "PMSS BOT 1919 - First Meeting Held at the School - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    f = open(path + file)
+    pmss_pages = pages_info(f, file)
     # show_results(pmss_pages)
     #  write_csv(pmss_pages)
 
-    links_visited = []  # list of links visited
-    web(links_visited, 'https://pmss.wpengine.com/')
-
+    # links_visited = []  # list of links visited
+    # web(links_visited, 'https://pmss.wpengine.com/')
+    print(f"--- {time.time() - start_time} seconds ---")
 
 if __name__ == "__main__":
     main()
