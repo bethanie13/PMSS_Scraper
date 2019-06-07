@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from Image import Image
+from PMSS_Image import PMSS_Image
 from Caption import Caption
 import copy
 import csv
@@ -9,11 +9,13 @@ from Page import Page
 import numpy as np
 import requests
 import os
+import sys
+from PIL import Image, ExifTags
+from PIL.TiffTags import TAGS
 import time
 
 
-def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
-
+def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
     """
     Levenshtein_ratio_and_distance:
     Calculates levenshtein distance between two strings.
@@ -434,24 +436,45 @@ def dir_dive():
     A function to find all the names of .tif's and .jpg's
     :return: A list of names of files
     """
-    archived_images = []
-    os.chdir("/Volumes/Elements/PMSS_ARCHIVE")  # Change to the archive directory
-    for root, dirs, files in os.walk(".", topdown=False):  # Traverse all of the files in every subdirectory
-        for name in files:  # for each name in our files
-            if name[-4:] == ".tif":  # if the file's extension is a tif
-                print(name)
-                print(root)
-                print(dirs)
+    os.chdir("/Volumes/Elements/PMSS_ARCHIVE")
+    tifs = []
+    img_count = 0
+    for root, dirs, files in os.walk(".", topdown=False):
+        for name in files:
+            if name[-4:] == ".tif" or name[-4:] == ".jpg":
+                tifs.append(name[:-4])
+                img_count += 1
+    print(img_count)
+    return tifs
+
+
+def compare_page_to_hdd(pages, tif_list):
+    for page in pages:
+        for image in page.images.keys():
+            if image in tif_list:
+                print("{} from {}: True".format(image, page.html))
+            else:
+                print("{} from {}: False".format(image, page.html))
+
+
+def extract_image_info():
+    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_PHOTOS/DSCF0014.jpg")
+    exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
+    print(exif)
+    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_13_education/education_series_13/jpg_educat_series_13/1940s_unknown_ed_obligation_015.jpg")
+    exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
+    print(exif)
+    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_REPORTS/1937-38_annual_board_report/jpg_1937_38_annual_board/1937-38_boar002.jpg")
+    if img._getexif():
+        exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
+        print(exif)
+
+    with Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_13_education/little_school/little_school_001.tif") as img:
+        meta_dict = {TAGS[key]: img.tag[key] for key in img.tag.keys()}
+        print(meta_dict)
 
 
 def pages_info(text, url):
-    """
-    This function is where most of our work takes place. Transcriptions,
-    the bibliography, captions, and images are all being ran through this function.
-    :param text: The text off of the web page that will be parsed
-    :return: Pages
-    """
-
     path = os.getcwd() + "/html/"
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     pages = []
@@ -532,7 +555,10 @@ def web(links_visited, web_url):
                     # print(links_destination)
                     web(links_visited, links_destination)  # recursive call to keep calling the different links
 
-start_time= time.time()
+
+start_time = time.time()
+
+
 def main():
     path = os.getcwd() + "/html/"
     file = "CONIFER INDEX - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"

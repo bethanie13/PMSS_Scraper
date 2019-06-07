@@ -1,4 +1,4 @@
-class Image:
+class PMSS_Image:
     def __init__(self):
         self.file_name = ""
         self.caption_link = ""
