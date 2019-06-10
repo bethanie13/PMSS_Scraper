@@ -1,10 +1,11 @@
-class Image:
+class PMSS_Image:
     def __init__(self):
         self.file_name = ""
         self.caption_link = ""
         self.transcription = ""
         self.upload_date = ""
         self.caption = ""
+        self.alt_captions = []
         self.image_resized_resolution = [0, 0]
 
     def __str__(self):
@@ -21,7 +22,7 @@ class Image:
         :param self: An Image object
         :return: None
         """
-        final_file_pieces = []  # puts the pieces of the final file into a list
+        final_file_pieces = []
         check = []
         resolution = ""
         ext = self.file_name[-4:]  # Assuming the extension is 3 characters long save the last few characters
@@ -62,3 +63,4 @@ class Image:
         print("Resolution: " + str(self.image_resized_resolution[0]) + "x" + str(self.image_resized_resolution[1]))
         if self.caption != "":
             print("Caption: " + self.caption)
+
