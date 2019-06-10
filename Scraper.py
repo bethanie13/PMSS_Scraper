@@ -120,12 +120,13 @@ def image_file_path_info(tag, img):
     :param img: an instance of the Images class for storing the given  information
     :return: None
     """
-    file_path = tag.get("src")      # looks for the tag of src within its file path
-    file_split = file_path.split("/")   # splits the file path when it encounters a /
-    img.file_name = file_split[-1]      # retrieves the file name once the file has been split
-    year = file_split[-3]               # retrieves the year the image was uploaded from the file name
-    month = file_split[-2]              # retrieves the month the image was uploaded from the file name
-    img.upload_date = month + "/" + year  # uploads the date of the image based on month and year
+    if tag.get("src"):
+        file_path = tag.get("src")      # looks for the tag of src within its file path
+        file_split = file_path.split("/")   # splits the file path when it encounters a /
+        img.file_name = file_split[-1]      # retrieves the file name once the file has been split
+        year = file_split[-3]               # retrieves the year the image was uploaded from the file name
+        month = file_split[-2]              # retrieves the month the image was uploaded from the file name
+        img.upload_date = month + "/" + year  # uploads the date of the image based on month and year
 
 
 def image_resolution(tag, img):
@@ -318,7 +319,7 @@ def get_tags_text(tag):
     if tag.string:
         return tag.string
     transcript = ""
-    
+
     for child in tag.children:
         transcript = transcript + get_tags_text(child)
     return transcript
@@ -382,6 +383,8 @@ def bibliography_pairings(page_soup):
                         "citation", "processed by", "last updated", "bibliography"]
     title = ""  # variables to store the information of the data in the rows
     info = ""
+    count_key = 0
+
     if rows:
         for row in rows.children:  # gets the child tag of table row
             if row != "\n":
@@ -391,6 +394,7 @@ def bibliography_pairings(page_soup):
                         if len(table_data.contents) != 0:
                             for p in table_data.children:  # gets the information/tags in the tag p
                                 if p != "\n":
+
                                     # store the information two at a time
                                     if count_data == 0:
                                         title = p.string  # if the count is 0 then put the information in variable 1
@@ -417,15 +421,21 @@ def bibliography_pairings(page_soup):
                                         count_data += 1
             if count_data > 1:  # if count is 2 then reset the count
                 count_data = 0
+                if title == None:
+                    return bibliography_dict, False
+                if title.lower() not in table_row_titles:
+                    return bibliography_dict, False
                 bibliography_dict[title] = info  # store variables into the dictionary with key and value
+                count_key += 1
                 title = ""
                 info = ""
-    for key in bibliography_dict.keys():
-        if key == None:
-            return
-        if key.lower() not in table_row_titles:
-            return
-    return bibliography_dict  # the dictionary of the bibliography will be returned
+    # for key in bibliography_dict.keys():
+    #     if key == None:
+    #         return bibliography_dict, False
+    if 5 <= count_key <= len(table_row_titles)-5:
+        return bibliography_dict, True
+    else:
+        return bibliography_dict, False
 
 
 def dir_dive():
@@ -455,7 +465,9 @@ def pages_info(text, url):
     current_page.images = image_info(web_page)
     captions = find_captions(web_page)
     image_caption_linking(captions, current_page.images)
-    current_page.bibliography = bibliography_pairings(web_page)
+    current_page.bibliography, partial_bib = bibliography_pairings(web_page)
+    if partial_bib:
+        print(f"Partial bibliography was found at: {url}")
     current_page.html = url
     find_transcriptions(web_page, current_page.images)
     pages.append(copy.copy(current_page))
@@ -471,7 +483,7 @@ def show_results(page_list):
     """
     for page in page_list:                # for every page in the list of pages
         print(page.html + "\n")
-        # page.view_bibliography()
+        page.view_bibliography()
         print()
         for image in page.images.keys():    # for an image in the pages return a list of keys from dictionary
             print(image)
@@ -529,17 +541,17 @@ def web(links_visited, web_url):
 
 start_time= time.time()
 def main():
-    path = os.getcwd() + "/html/"
-    file = "CONIFER INDEX - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
+    # path = os.getcwd() + "/html/"
+    # file = "CONIFER INDEX - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
     # # file_2 = "KATHERINE B. WRIGHT - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
     # # file_3 = "PMSS BOT 1919 - First Meeting Held at the School - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
-    f = open(path + file)
-    pmss_pages = pages_info(f, file)
+    # f = open(path + file)
+    # pmss_pages = pages_info(f, file)
     # show_results(pmss_pages)
     #  write_csv(pmss_pages)
 
-    # links_visited = []  # list of links visited
-    # web(links_visited, 'https://pmss.wpengine.com/')
+    links_visited = []  # list of links visited
+    web(links_visited, 'https://pmss.wpengine.com/')
     print(f"--- {time.time() - start_time} seconds ---")
 
 if __name__ == "__main__":
