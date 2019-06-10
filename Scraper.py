@@ -76,8 +76,8 @@ def image_info(page_soup):
     images_dict = {}            # create a dictionary for the images
     for image in page_soup.find_all('img'):  # for an image it will find all of the img tags within the html of the page
         if image.get("src"):
-
-            temp = Image()
+            img_src = image.get("src")
+            temp = PMSS_Image()
 
             # Pull out the id that will be used to find this image's caption
             caption_link(image, temp)
@@ -110,7 +110,8 @@ def caption_link(tag, img):
     :param img: an instance of the Images class for storing the given  information
     :return: None
     """
-    img.caption_link = tag.get("aria-describedby")  # retrieves the link of the caption by looking for the key word of
+    if tag.get("aria-describedby"):
+        img.caption_link = tag.get("aria-describedby")  # retrieves the link of the caption by looking for the key word of
     # aria-describedby and gets the tag from it
 
 
@@ -172,10 +173,11 @@ def image_caption_linking(captions_dict, images_dict):
     """
     for caption in captions_dict.keys():  # for every caption of an image in the caption dictionary
         for image in images_dict.keys():  # for every image in the image dictionary
-            if not images_dict[image].caption:
-                if captions_dict[caption].image_link == images_dict[
-                        image].caption_link:  # if the caption dictionary matches the image dictionary
-                    images_dict[image].caption = captions_dict[caption].caption  # then the image will go with the caption
+            if images_dict[image].caption_link:
+                if not images_dict[image].caption:
+                    if captions_dict[caption].image_link == images_dict[
+                            image].caption_link:  # if the caption dictionary matches the image dictionary
+                        images_dict[image].caption = captions_dict[caption].caption  # then the image will go with the caption
 
 
 def find_transcriptions(page_soup, img_dict):
@@ -240,7 +242,7 @@ def find_transcriptions(page_soup, img_dict):
                                     pass
                         if len(page_source) >= 5:  # if the length of the page source is > 2
                             img_dict[
-                                page_source] = Image()  # Create a new object with page_source as a key
+                                page_source] = PMSS_Image()  # Create a new object with page_source as a key
                             current_file = page_source  # Set the current_file as page_source (so we store the transcript in the right place)
                             recording = True  # Turn recording on as we are looking at a page's transcription
             for main_tags_child in tag.children:
@@ -253,10 +255,10 @@ def find_transcriptions(page_soup, img_dict):
                         if recording:
                             split_name = main_tags_child.string.split(
                                 "[")  # if .jpg found then we will then extract file name
-                            current_file = split_name[-1][:-5]
+                            current_file = split_name[-1][:-6]
                             image_index += 1
                             if current_file not in img_dict:
-                                img_dict[current_file] = Image()  # if the current file is not in the image dictionary
+                                img_dict[current_file] = PMSS_Image()  # if the current file is not in the image dictionary
                                 img_dict[
                                     current_file].file_name = "Outlier"  # we need to store the image into the dictionary and note that is an outlier
 
@@ -379,12 +381,14 @@ def bibliography_pairings(page_soup):
     count_data = 0  # used to store data in twos (count data will increment to 2 and then reset to 0 when data is saved
     bibliography_dict = {}
     table_row_titles = ["title", "alt. title", "identifier", "creator", "alt. creator", "subject keyword",
-                        "subject lcsh", "date digital", "date",
+                        "subject lcsh", "date digital", "date original", "date",
                         "publisher", "contributor", "type", "format", "source", "language", "relation",
                         "coverage temporal", "coverage spatial", "rights", "donor", "description", "acquisition",
                         "citation", "processed by", "last updated", "bibliography"]
     title = ""  # variables to store the information of the data in the rows
     info = ""
+    count_key = 0
+
     if rows:
         for row in rows.children:  # gets the child tag of table row
             if row != "\n":
@@ -420,15 +424,18 @@ def bibliography_pairings(page_soup):
                                         count_data += 1
             if count_data > 1:  # if count is 2 then reset the count
                 count_data = 0
+                if title == None:
+                    return bibliography_dict, False
+                if title.lower() not in table_row_titles:
+                    return bibliography_dict, False
                 bibliography_dict[title] = info  # store variables into the dictionary with key and value
+                count_key += 1
                 title = ""
                 info = ""
-    for key in bibliography_dict.keys():
-        if key == None:
-            return
-        if key.lower() not in table_row_titles:
-            return
-    return bibliography_dict  # the dictionary of the bibliography will be returned
+    if 5 <= count_key <= len(table_row_titles)-5:
+        return bibliography_dict, True
+    else:
+        return bibliography_dict, False
 
 
 def dir_dive():
@@ -449,6 +456,12 @@ def dir_dive():
 
 
 def compare_page_to_hdd(pages, tif_list):
+    """
+    WIP
+    :param pages:
+    :param tif_list:
+    :return:
+    """
     for page in pages:
         for image in page.images.keys():
             if image in tif_list:
@@ -458,6 +471,10 @@ def compare_page_to_hdd(pages, tif_list):
 
 
 def extract_image_info():
+    """
+    WIP
+    :return:
+    """
     img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_PHOTOS/DSCF0014.jpg")
     exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
     print(exif)
@@ -475,38 +492,44 @@ def extract_image_info():
 
 
 def pages_info(text, url):
-    path = os.getcwd() + "/html/"
-    onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
-    pages = []
+    """
+    Driver function for getting information for a page.
+    :param text: full html as plain text
+    :param url: The url for the webpage
+    :return: page object
+    """
     current_page = Page()
     web_page = BeautifulSoup(text, 'html.parser')
     current_page.images = image_info(web_page)
     captions = find_captions(web_page)
     image_caption_linking(captions, current_page.images)
-    current_page.bibliography = bibliography_pairings(web_page)
+    # TODO: The following 3 lines are for getting bibliographies
+    current_page.bibliography, partial_bib = bibliography_pairings(web_page)
+    if partial_bib:
+        print(f"Partial bibliography was found at: {url}")
     current_page.html = url
+    # TODO: This is for getting transcriptions
     find_transcriptions(web_page, current_page.images)
-    pages.append(copy.copy(current_page))
-    show_results(pages)
-    return pages
+    # TODO: Print out all the information gathered from the page
+    show_results(current_page)
+    return current_page
 
 
-def show_results(page_list):
+def show_results(page):
     """
     Shows the list of pages that we visit
     :param page_list: A list of all the web pages
     :return: None
     """
-    for page in page_list:                # for every page in the list of pages
-        print(page.html + "\n")
-        # page.view_bibliography()
-        print()
-        for image in page.images.keys():    # for an image in the pages return a list of keys from dictionary
-            print(image)
-            print(page.images[image])
+    print(page.html + "\n")
+    page.view_bibliography()
+    print()
+    for image in page.images.keys():    # for an image in the pages return a list of keys from dictionary
+        print(image)
+        print(page.images[image])
 
 
-def web(links_visited, web_url):
+def web(links_visited, web_url, pages_list):
     """
     Web Crawler that will scan through the pmss webepage and find all different links from various pages
     :param links_visited: A list that will store all of the links visited through the crawler
@@ -525,7 +548,8 @@ def web(links_visited, web_url):
         return                          # it will only scrape data within the domain of pmss
     if web_url in links_visited:  # base case if we have already visited the link we do not want to re-visit it over
         return
-    if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
+    # TODO: If you want to change the number of pages to crawl through, change the number below
+    if len(links_visited) > 50:  # restriction for the amount of pages we want to search (temporary)
         return
     if web_url.split(".")[-1] in ext:  # split url if the end of url is in ext just return
         return
@@ -535,7 +559,8 @@ def web(links_visited, web_url):
     result = requests.get(web_url, headers=headers)  # helps us avoid forbidden error code
     plain = result.text
     # print(f"{web_url} images:  ")
-    pages_info(plain, web_url)
+
+    pages_list.append(pages_info(plain, web_url))
     page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
     for link in page_soup.findAll('a'):  # finds all a tags within html
         if not link.get("class"):    # avoid the html tag with class
@@ -553,25 +578,56 @@ def web(links_visited, web_url):
                             pass
                     links_destination = link.get('href')  # gets the href and this determines the links destination
                     # print(links_destination)
-                    web(links_visited, links_destination)  # recursive call to keep calling the different links
+                    web(links_visited, links_destination, pages_list)  # recursive call to keep calling the different links
+
+
+def create_master_list(pages_list):
+    """
+    Combine all of the images and bibliographies into one structure respectively
+    :param pages_list: A list of pages
+    :return: A complete list of all the bibliographies and all of the images
+    """
+    list_of_images = {}
+    list_of_bibs = []
+
+    for page in pages_list:
+        for image in page.images.keys():
+            try:
+                if list_of_images[image]:
+                    list_of_images[image].alt_captions.append(list_of_images[image].caption)
+            except KeyError:
+                list_of_images[image] = page.images[image]
+            # list_of_images[image] = page.images[image]
+        if page.bibliography:
+            list_of_bibs.append(page.bibliography)
+    return list_of_bibs, list_of_images
 
 
 start_time = time.time()
 
 
 def main():
-    path = os.getcwd() + "/html/"
-    file = "CONIFER INDEX - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
-    # # file_2 = "KATHERINE B. WRIGHT - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
-    # # file_3 = "PMSS BOT 1919 - First Meeting Held at the School - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"
-    f = open(path + file)
-    pmss_pages = pages_info(f, file)
+    # TODO: uncomment the following 5 lines to run for a specific page
+    # path = os.getcwd() + "/html/"  # TODO: make html folder in same directory if it doesn't exist
+    # file = "CONIFER INDEX - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm" # TODO: put filename here
+    # f = open(path + file)
+    # pmss_pages = pages_info(f, file)
     # show_results(pmss_pages)
     #  write_csv(pmss_pages)
+    pages_list = []
+    links_visited = []  # list of links visited
+    web(links_visited, 'https://pmss.wpengine.com/', pages_list)
+    print(pages_list)
+    bib_master_list, images_master_list = create_master_list(pages_list)
+    for bib in bib_master_list:
+        for row_title in bib.keys():
+            print(f"{row_title}: {bib[row_title]}")
+        print()
+    for image in images_master_list:
+        print(image)
 
-    # links_visited = []  # list of links visited
-    # web(links_visited, 'https://pmss.wpengine.com/')
     print(f"--- {time.time() - start_time} seconds ---")
+
 
 if __name__ == "__main__":
     main()

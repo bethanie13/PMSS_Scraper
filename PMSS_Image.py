@@ -5,6 +5,7 @@ class PMSS_Image:
         self.transcription = ""
         self.upload_date = ""
         self.caption = ""
+        self.alt_captions = []
         self.image_resized_resolution = [0, 0]
 
     def __str__(self):
