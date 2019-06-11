@@ -3,6 +3,7 @@ class Page:
         self.images = {}  # A dictionary to contain the images from the web page
         self.bibliography = {}  # A dictionary to contain information in the bibiliography
         self.html = ""
+        self.is_guide = False
 
     def view_bibliography(self):
         if self.bibliography:

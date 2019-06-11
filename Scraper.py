@@ -13,6 +13,7 @@ import sys
 from PIL import Image, ExifTags
 from PIL.TiffTags import TAGS
 import time
+import bs4
 
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
@@ -377,7 +378,10 @@ def bibliography_pairings(page_soup):
     :param page_soup: Beautiful Soup Object
     :return: A dictionary containing all of the bibliography pairings
     """
-    rows = page_soup.tbody # the rows of the table will be within the tbody of the html
+    rows = page_soup.find_all("tbody")  # the rows of the table will be within the tbody of the html
+    if rows:
+        rows = rows[-1]
+
     count_data = 0  # used to store data in twos (count data will increment to 2 and then reset to 0 when data is saved
     bibliography_dict = {}
     table_row_titles = ["title", "alt. title", "identifier", "creator", "alt. creator", "subject keyword",
@@ -388,54 +392,117 @@ def bibliography_pairings(page_soup):
     title = ""  # variables to store the information of the data in the rows
     info = ""
     count_key = 0
-
+    row_title_list = []
+    row_info_list = []
     if rows:
         for row in rows.children:  # gets the child tag of table row
             if row != "\n":
-                for table_data in row.contents:  # gets the child tag of table data
+                for table_data in row.children:  # gets the child tag of table data
                     if table_data != "\n":
-                        get_tags_text(table_data)
-                        if len(table_data.contents) != 0:
-                            for p in table_data.children:  # gets the information/tags in the tag p
-                                if p != "\n":
-                                    # store the information two at a time
-                                    if count_data == 0:
-                                        title = p.string  # if the count is 0 then put the information in variable 1
-                                        count_data += 1
-                                    elif count_data != 0:  # if the count is not 0 then put the information in variable 2
-                                        info = p.string
-                                        count_data += 1
-                        else:
-                            if table_data.string != "\n":
-                                # store the information two at a time
-                                if count_data == 0:
-                                    if not table_data.string:
-                                        title = "None"
-                                        count_data += 1
-                                    else:
-                                        title = table_data.string  # if the count is 0 then put the information in variable 1
-                                        count_data += 1
-                                elif count_data != 0:  # if the count is not 0 then put the information in variable 2
-                                    if not table_data.string:
-                                        info = "None"
-                                        count_data += 1
-                                    else:
-                                        info = table_data.string
-                                        count_data += 1
+                        if count_data == 0:
+                            bibliography_text_retrieval(table_data, row_title_list)
+
+                        if count_data != 0:
+                            bibliography_text_retrieval(table_data, row_info_list)
+
+                        # get_tags_text(table_data)
+                        # if len(table_data.contents) != 0:
+                        #     for p in table_data.children:  # gets the information/tags in the tag p
+                        #         if p != "\n":
+                        #             # store the information two at a time
+                        #             if count_data == 0:
+                        #                 title = p.string  # if the count is 0 then put the information in variable 1
+                        #                 count_data += 1
+                        #             elif count_data != 0:  # if the count is not 0 then put the information in variable 2
+                        #                 info = p.string
+                        #                 count_data += 1
+                        # if table_data.children > 1:
+                        #     for index in bibliography_dict:
+                        #         if len(bibliography_dict) % 2 == 0:
+
+                        # else:
+                        #     if table_data.string != "\n":
+                        #         # store the information two at a time
+                        #         if count_data == 0:
+                        #             if not table_data.string:
+                        #                 title = "None"
+                        #                 count_data += 1
+                        #             else:
+                        #                 title = table_data.string  # if the count is 0 then put the information in variable 1
+                        #                 count_data += 1
+                        #         elif count_data != 0:  # if the count is not 0 then put the information in variable 2
+                        #             if not table_data.string:
+                        #                 info = "None"
+                        #                 count_data += 1
+                        #             else:
+                        #                 info = table_data.string
+                        #                 count_data += 1
+                        count_data += 1
             if count_data > 1:  # if count is 2 then reset the count
                 count_data = 0
-                if title == None:
-                    return bibliography_dict, False
-                if title.lower() not in table_row_titles:
-                    return bibliography_dict, False
-                bibliography_dict[title] = info  # store variables into the dictionary with key and value
-                count_key += 1
-                title = ""
-                info = ""
+                if len(row_title_list) == len(row_info_list):
+                    for i in range(len(row_title_list)):
+                        if row_title_list[i].lower() not in table_row_titles:
+                            # bibliography_dict = {}
+                            return bibliography_dict, True
+                        bibliography_dict[row_title_list[i]] = row_info_list[i]
+                        count_key += 1
+                    row_title_list = []
+                    row_info_list = []
+                else:
+                    full_title = ""
+                    full_info = ""
+                    for title in row_title_list:
+                        full_title += title
+                    for info in row_info_list:
+                        full_info += info
+                    if full_title.lower() not in table_row_titles:
+                        # bibliography_dict = {}
+                        return bibliography_dict, True
+                    bibliography_dict[full_title] = full_info
+                    count_key += 1
+                    row_title_list = []
+                    row_info_list = []
+                # if title == None:
+                #     return bibliography_dict, False
+                # if title.lower() not in table_row_titles:
+                #     return bibliography_dict, False
+                # bibliography_dict[title] = info  # store variables into the dictionary with key and value
+                # count_key += 1
+                # title = ""
+                # info = ""
     if 5 <= count_key <= len(table_row_titles)-5:
         return bibliography_dict, True
     else:
         return bibliography_dict, False
+
+
+def bibliography_text_retrieval(tag, column_list):
+
+    if tag.string:  # if we are at the last descendant (the text
+        text = ""
+        if "\n" in tag.string:
+            for piece in tag.string.split("\n"):
+                if piece != "":
+                    text += piece + " "
+        else:
+            text = tag.string
+        if isinstance(text, bs4.element.NavigableString):
+            column_list.append(text)  #
+        return
+    for child in tag.children:  # for each of the current tag's children
+        bibliography_text_retrieval(child, column_list)  # recursive function call to build the transcript
+    return   # return the full text
+
+
+def check_if_guide(page_soup, page):
+    header_tags = ["h1", "h2", "h3", "h4", "h5", "h6"]
+    entry_title = ""
+    for header in header_tags:
+        entry_title = page_soup.find_all(header, attrs={"class": "entry-title"})
+    if entry_title:
+        if "GUIDE" in entry_title:
+            page.is_guide = True
 
 
 def dir_dive():
@@ -499,6 +566,7 @@ def pages_info(text, url):
     :return: page object
     """
     current_page = Page()
+    print(url)
     web_page = BeautifulSoup(text, 'html.parser')
     current_page.images = image_info(web_page)
     captions = find_captions(web_page)
@@ -507,9 +575,11 @@ def pages_info(text, url):
     current_page.bibliography, partial_bib = bibliography_pairings(web_page)
     if partial_bib:
         print(f"Partial bibliography was found at: {url}")
+        # input()
     current_page.html = url
+    check_if_guide(web_page, current_page)
     # TODO: This is for getting transcriptions
-    find_transcriptions(web_page, current_page.images)
+    # find_transcriptions(web_page, current_page.images)
     # TODO: Print out all the information gathered from the page
     show_results(current_page)
     return current_page
@@ -536,8 +606,6 @@ def web(links_visited, web_url, pages_list):
     :param web_url: The Urls that will be visited
     :return: None
     """
-    if web_url == "https://pmss.wpengine.com/biography-a-z/elizabeth-c-hench/":
-        pass
     split_link = web_url.split(".")  # splits the link on a period to get domain
     if len(split_link) > 1:       # base case to ensure that there is a link
         domain = split_link[0] + split_link[1]  # stores the domain
@@ -549,18 +617,17 @@ def web(links_visited, web_url, pages_list):
     if web_url in links_visited:  # base case if we have already visited the link we do not want to re-visit it over
         return
     # TODO: If you want to change the number of pages to crawl through, change the number below
-    if len(links_visited) > 50:  # restriction for the amount of pages we want to search (temporary)
+    if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
         return
     if web_url.split(".")[-1] in ext:  # split url if the end of url is in ext just return
         return
     links_visited.append(web_url)   # append the urls that we visit to a list of links visited
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
-     (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}   # this is the user agent name
-    result = requests.get(web_url, headers=headers)  # helps us avoid forbidden error code
-    plain = result.text
-    # print(f"{web_url} images:  ")
+     (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}   # the User-Agent header makes our code not look like a bot
+    result = requests.get(web_url, headers=headers)
+    plain = result.text  # raw html
 
-    pages_list.append(pages_info(plain, web_url))
+    pages_list.append(pages_info(plain, web_url))  # append the page to a list after getting info for it
     page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
     for link in page_soup.findAll('a'):  # finds all a tags within html
         if not link.get("class"):    # avoid the html tag with class
@@ -624,6 +691,7 @@ def main():
             print(f"{row_title}: {bib[row_title]}")
         print()
     for image in images_master_list:
+        print("Image in Master List:")
         print(image)
 
     print(f"--- {time.time() - start_time} seconds ---")
