@@ -17,6 +17,9 @@ import bs4
 
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
+    # Code adapted from Francisco Javier Carrera Arias from
+    # https://www.datacamp.com/community/tutorials/fuzzy-string-python
+
     """
     Levenshtein_ratio_and_distance:
     Calculates levenshtein distance between two strings.
@@ -384,13 +387,17 @@ def bibliography_pairings(page_soup):
 
     count_data = 0  # used to store data in twos (count data will increment to 2 and then reset to 0 when data is saved
     bibliography_dict = {}
-    table_row_titles = ["title", "alt. title", "identifier", "creator", "alt. creator", "subject keyword",
-                        "subject lcsh", "date digital", "date original", "date",
-                        "publisher", "contributor", "type", "format", "source", "language", "relation",
-                        "coverage temporal", "coverage spatial", "rights", "donor", "description", "acquisition",
-                        "citation", "processed by", "last updated", "bibliography"]
-    title = ""  # variables to store the information of the data in the rows
-    info = ""
+    table_row_titles_lower = ["title", "alt. title", "identifier", "creator", "alt. creator", "alt. creators" "subject keyword",
+                              "subject lcsh", "date digital", "date original", "date",
+                              "publisher", "contributor", "type", "format", "source", "language", "relation",
+                              "coverage temporal", "coverage spatial", "rights", "donor", "description", "acquisition",
+                              "citation", "processed by", "last updated", "bibliography"]
+
+    table_row_titles = ["Title", "Alt. Title", "Identifier", "Creator", "Alt. Creator", "Alt. Creators" "Subject Keyword",
+                        "Subject LCSH", "Date digital", "Date original", "Date",
+                        "Publisher", "Contributor", "Type", "Format", "Source", "Language", "Relation",
+                        "Coverage Temporal", "Coverage Spatial", "Rights", "Donor", "Description", "Acquisition",
+                        "Citation", "Processed by", "Last updated", "Bibliography"]
     count_key = 0
     row_title_list = []
     row_info_list = []
@@ -405,48 +412,27 @@ def bibliography_pairings(page_soup):
                         if count_data != 0:
                             bibliography_text_retrieval(table_data, row_info_list)
 
-                        # get_tags_text(table_data)
-                        # if len(table_data.contents) != 0:
-                        #     for p in table_data.children:  # gets the information/tags in the tag p
-                        #         if p != "\n":
-                        #             # store the information two at a time
-                        #             if count_data == 0:
-                        #                 title = p.string  # if the count is 0 then put the information in variable 1
-                        #                 count_data += 1
-                        #             elif count_data != 0:  # if the count is not 0 then put the information in variable 2
-                        #                 info = p.string
-                        #                 count_data += 1
-                        # if table_data.children > 1:
-                        #     for index in bibliography_dict:
-                        #         if len(bibliography_dict) % 2 == 0:
-
-                        # else:
-                        #     if table_data.string != "\n":
-                        #         # store the information two at a time
-                        #         if count_data == 0:
-                        #             if not table_data.string:
-                        #                 title = "None"
-                        #                 count_data += 1
-                        #             else:
-                        #                 title = table_data.string  # if the count is 0 then put the information in variable 1
-                        #                 count_data += 1
-                        #         elif count_data != 0:  # if the count is not 0 then put the information in variable 2
-                        #             if not table_data.string:
-                        #                 info = "None"
-                        #                 count_data += 1
-                        #             else:
-                        #                 info = table_data.string
-                        #                 count_data += 1
                         count_data += 1
+
             if count_data > 1:  # if count is 2 then reset the count
                 count_data = 0
                 if len(row_title_list) == len(row_info_list):
                     for i in range(len(row_title_list)):
-                        if row_title_list[i].lower() not in table_row_titles:
-                            # bibliography_dict = {}
-                            return bibliography_dict, True
-                        bibliography_dict[row_title_list[i]] = row_info_list[i]
-                        count_key += 1
+                        if row_title_list[i].lower() not in table_row_titles_lower:
+                            is_part_of_dict = False
+                            for title in table_row_titles_lower:
+                                if levenshtein_ratio_and_distance(title, row_title_list[i].lower(), True) >= .80:
+                                    is_part_of_dict = True
+                                    item_index = table_row_titles_lower.index(title)
+                                    bibliography_dict[table_row_titles[item_index]] = row_info_list[i]
+                                    count_key += 1
+                                    break
+                            if not is_part_of_dict:
+                                bibliography_dict = {}
+                                return bibliography_dict, True
+                        else:
+                            bibliography_dict[row_title_list[i]] = row_info_list[i]
+                            count_key += 1
                     row_title_list = []
                     row_info_list = []
                 else:
@@ -456,22 +442,25 @@ def bibliography_pairings(page_soup):
                         full_title += title
                     for info in row_info_list:
                         full_info += info
-                    if full_title.lower() not in table_row_titles:
-                        # bibliography_dict = {}
-                        return bibliography_dict, True
-                    bibliography_dict[full_title] = full_info
-                    count_key += 1
+                    if full_title.lower() not in table_row_titles_lower:
+                        is_part_of_dict = False
+                        for title in table_row_titles_lower:
+                            if levenshtein_ratio_and_distance(title, full_title, True) >= .80:
+                                is_part_of_dict = True
+                                item_index = table_row_titles_lower.index(title)
+                                bibliography_dict[table_row_titles[item_index]] = full_info
+                                count_key += 1
+                                break
+                        if not is_part_of_dict:
+                            bibliography_dict = {}
+                            return bibliography_dict, True
+                    else:
+                        bibliography_dict[full_title] = full_info
+                        count_key += 1
                     row_title_list = []
                     row_info_list = []
-                # if title == None:
-                #     return bibliography_dict, False
-                # if title.lower() not in table_row_titles:
-                #     return bibliography_dict, False
-                # bibliography_dict[title] = info  # store variables into the dictionary with key and value
-                # count_key += 1
-                # title = ""
-                # info = ""
-    if 5 <= count_key <= len(table_row_titles)-5:
+
+    if 5 <= count_key <= len(table_row_titles)-6:
         return bibliography_dict, True
     else:
         return bibliography_dict, False
@@ -496,13 +485,13 @@ def bibliography_text_retrieval(tag, column_list):
 
 
 def check_if_guide(page_soup, page):
-    header_tags = ["h1", "h2", "h3", "h4", "h5", "h6"]
-    entry_title = ""
+    header_tags = ["h1", "h2"]
     for header in header_tags:
-        entry_title = page_soup.find_all(header, attrs={"class": "entry-title"})
-    if entry_title:
-        if "GUIDE" in entry_title:
-            page.is_guide = True
+        entry_title = page_soup.find(header, attrs={"class": "entry-title"})
+        if entry_title:
+            if entry_title.string:
+                if "GUIDE" in entry_title.string:
+                    page.is_guide = True
 
 
 def dir_dive():
@@ -577,7 +566,7 @@ def pages_info(text, url):
         print(f"Partial bibliography was found at: {url}")
         # input()
     current_page.html = url
-    check_if_guide(web_page, current_page)
+    # check_if_guide(web_page, current_page)
     # TODO: This is for getting transcriptions
     # find_transcriptions(web_page, current_page.images)
     # TODO: Print out all the information gathered from the page
@@ -592,6 +581,10 @@ def show_results(page):
     :return: None
     """
     print(page.html + "\n")
+    if page.is_guide:
+        print("This page is a guide")
+    else:
+        print("This page is not a guide")
     page.view_bibliography()
     print()
     for image in page.images.keys():    # for an image in the pages return a list of keys from dictionary
@@ -656,6 +649,7 @@ def create_master_list(pages_list):
     """
     list_of_images = {}
     list_of_bibs = []
+    guide_pages = []
 
     for page in pages_list:
         for image in page.images.keys():
@@ -667,7 +661,9 @@ def create_master_list(pages_list):
             # list_of_images[image] = page.images[image]
         if page.bibliography:
             list_of_bibs.append(page.bibliography)
-    return list_of_bibs, list_of_images
+        if page.is_guide:
+            guide_pages.append(page.html)
+    return list_of_bibs, list_of_images, guide_pages
 
 
 start_time = time.time()
@@ -676,16 +672,15 @@ start_time = time.time()
 def main():
     # TODO: uncomment the following 5 lines to run for a specific page
     # path = os.getcwd() + "/html/"  # TODO: make html folder in same directory if it doesn't exist
-    # file = "CONIFER INDEX - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm" # TODO: put filename here
+    # file = "GUIDE to BOOK and PERIODICAL Collections - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"  # TODO: put filename here
     # f = open(path + file)
     # pmss_pages = pages_info(f, file)
-    # show_results(pmss_pages)
     #  write_csv(pmss_pages)
     pages_list = []
     links_visited = []  # list of links visited
     web(links_visited, 'https://pmss.wpengine.com/', pages_list)
     print(pages_list)
-    bib_master_list, images_master_list = create_master_list(pages_list)
+    bib_master_list, images_master_list, guide_pages = create_master_list(pages_list)
     for bib in bib_master_list:
         for row_title in bib.keys():
             print(f"{row_title}: {bib[row_title]}")
@@ -693,7 +688,11 @@ def main():
     for image in images_master_list:
         print("Image in Master List:")
         print(image)
-
+    # for page in guide_pages:
+    #     print(page)
+    # with open("guide_urls", "a") as file:
+    #     for url in guide_pages:
+    #         file.write(f"{url}\n")
     print(f"--- {time.time() - start_time} seconds ---")
 
 
