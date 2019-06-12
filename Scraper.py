@@ -17,6 +17,9 @@ import bs4
 
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
+    # Code adapted from Francisco Javier Carrera Arias from
+    # https://www.datacamp.com/community/tutorials/fuzzy-string-python
+
     """
     Levenshtein_ratio_and_distance:
     Calculates levenshtein distance between two strings.
@@ -66,6 +69,59 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
         # insertions and/or substitutions
         # This is the minimum number of edits needed to convert string a to string b
         return "The strings are {} edits away".format(distance[row][col])
+
+
+def dir_dive():
+    """
+    A function to find all the names of .tif's and .jpg's
+    :return: A list of names of files
+    """
+    os.chdir("/Volumes/Elements/PMSS_ARCHIVE")
+    tifs = []
+    img_count = 0
+    for root, dirs, files in os.walk(".", topdown=False):
+        for name in files:
+            if name[-4:] == ".tif" or name[-4:] == ".jpg":
+                tifs.append(name[:-4])
+                img_count += 1
+    print(img_count)
+    return tifs
+
+
+def compare_page_to_hdd(pages, tif_list):
+    """
+    WIP
+    :param pages:
+    :param tif_list:
+    :return:
+    """
+    for page in pages:
+        for image in page.images.keys():
+            if image in tif_list:
+                print("{} from {}: True".format(image, page.url))
+            else:
+                print("{} from {}: False".format(image, page.url))
+
+
+def extract_image_info():
+    """
+    WIP
+    :return:
+    """
+    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_PHOTOS/DSCF0014.jpg")
+    exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
+    print(exif)
+    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_13_education/education_series_13/jpg_educat_series_13/1940s_unknown_ed_obligation_015.jpg")
+    exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
+    print(exif)
+    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_REPORTS/1937-38_annual_board_report/jpg_1937_38_annual_board/1937-38_boar002.jpg")
+    if img._getexif():
+        exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
+        print(exif)
+
+    with Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_13_education/little_school/little_school_001.tif") as img:
+        meta_dict = {TAGS[key]: img.tag[key] for key in img.tag.keys()}
+        print(meta_dict)
 
 
 def image_info(page_soup):
@@ -124,11 +180,11 @@ def image_file_path_info(tag, img):
     :param img: an instance of the Images class for storing the given  information
     :return: None
     """
-    file_path = tag.get("src")      # looks for the tag of src within its file path
-    file_split = file_path.split("/")   # splits the file path when it encounters a /
-    img.file_name = file_split[-1]      # retrieves the file name once the file has been split
-    year = file_split[-3]               # retrieves the year the image was uploaded from the file name
-    month = file_split[-2]              # retrieves the month the image was uploaded from the file name
+    file_path = tag.get("src")            # looks for the tag of src within its file path
+    file_split = file_path.split("/")     # splits the file path when it encounters a /
+    img.file_name = file_split[-1]        # retrieves the file name once the file has been split
+    year = file_split[-3]                 # retrieves the year the image was uploaded from the file name
+    month = file_split[-2]                # retrieves the month the image was uploaded from the file name
     img.upload_date = month + "/" + year  # uploads the date of the image based on month and year
 
 
@@ -139,7 +195,7 @@ def image_resolution(tag, img):
     :param img: An Image object
     :return: None
     """
-    img.image_resized_resolution[0] = tag.get("width")  # outputs the width resolution of the image
+    img.image_resized_resolution[0] = tag.get("width")   # outputs the width resolution of the image
     img.image_resized_resolution[1] = tag.get("height")  # outputs the height resolution of the image
 
 
@@ -155,14 +211,14 @@ def find_captions(page_soup):
         temp = Caption()                       # temporarily stores a caption for class constructor
         temp.image_link = caption.get('id')     # retrieves the caption through the tag of "id" which will be image link
         temp.caption = caption.string[5:-5]
-        captions_dict[temp.image_link] = copy.copy(temp)   # makes a shallow copy of the image link stored in the dictionary
+        captions_dict[temp.image_link] = copy.copy(temp)  # makes a shallow copy of the image link stored in the dictionary
     for caption in page_soup.find_all('p'):         # for every caption find the "p" tags
         temp = Caption()                      # temporarily stores a caption for class constructor
         temp.image_link = caption.get('id')    # retrieves the caption through the tag of "id" which will be image link
         temp.caption = caption.string           # converts caption to a string
         captions_dict[temp.image_link] = copy.copy(temp)  # makes a shallow copy of the image link stored in the dictionary
 
-    return captions_dict                        # return the dicitonary
+    return captions_dict                        # return the dictionary
 
 
 def image_caption_linking(captions_dict, images_dict):
@@ -320,9 +376,9 @@ def get_tags_text(tag):
     :return base case: Return the string of current tag
     :return for the function: Return the full transcript
     """
-    if tag.string:  # if we are at the last descendent (the text)
+    if tag.string:  # if we are at the last descendant (the text)
         return tag.string  # return the string
-    transcript = ""  # a variable to build wthe full text into
+    transcript = ""  # a variable to build the full text into
     for child in tag.children:  # for each of the current tag's children
         transcript = transcript + get_tags_text(child)  # recursive function call to build the transcript
     return transcript  # return the full text
@@ -357,10 +413,10 @@ def write_csv(page_list):
         os.chdir(csv_path)  # change to the csv directory
     if to_csv.lower() == "y":  # if the user responded yes
         for page in page_list:  # for each page in our list of page objects
-            write_page = input(f"Do you want to output {page.html}? (y/n): ")  # Ask the user if they want to output the page
+            write_page = input(f"Do you want to output {page.url}? (y/n): ")  # Ask the user if they want to output the page
             if write_page.lower() == "y":  # if the user said yes to output the page
-                ext_len = len(page.html.split(".")[-1])  # get the length of the extension
-                csv_name = page.html[:-ext_len - 1] + ".csv"  # remove the current extension and add .csv to the end
+                ext_len = len(page.url.split(".")[-1])  # get the length of the extension
+                csv_name = page.url[:-ext_len - 1] + ".csv"  # remove the current extension and add .csv to the end
 
                 with open(csv_name, 'w') as csvfile:  # open csv file for the page we are currently on
                     file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
@@ -378,184 +434,132 @@ def bibliography_pairings(page_soup):
     :param page_soup: Beautiful Soup Object
     :return: A dictionary containing all of the bibliography pairings
     """
-    rows = page_soup.find_all("tbody")  # the rows of the table will be within the tbody of the html
-    if rows:
-        rows = rows[-1]
+    table = page_soup.find_all("table")  # finds all the table tags on the specific web page
+    if table:                            # if the table tag exists
+        table = table[-1]                # looks at the last table on the page
 
-    count_data = 0  # used to store data in twos (count data will increment to 2 and then reset to 0 when data is saved
-    bibliography_dict = {}
-    table_row_titles = ["title", "alt. title", "identifier", "creator", "alt. creator", "subject keyword",
-                        "subject lcsh", "date digital", "date original", "date",
-                        "publisher", "contributor", "type", "format", "source", "language", "relation",
-                        "coverage temporal", "coverage spatial", "rights", "donor", "description", "acquisition",
-                        "citation", "processed by", "last updated", "bibliography"]
-    title = ""  # variables to store the information of the data in the rows
-    info = ""
-    count_key = 0
-    row_title_list = []
-    row_info_list = []
-    if rows:
-        for row in rows.children:  # gets the child tag of table row
-            if row != "\n":
-                for table_data in row.children:  # gets the child tag of table data
-                    if table_data != "\n":
-                        if count_data == 0:
-                            bibliography_text_retrieval(table_data, row_title_list)
+    count_data = 0   # used to store data in twos (count data will increment to 2 and then reset to 0 when data is saved
+    bibliography_dict = {}       # dictionary that will store all of the bibliographies
+    # list of all possible row titles lowered to use as a reference for comparing information
+    table_row_titles_lower = ["title", "alt. title", "identifier", "creator", "alt. creator", "alt. creators", "subject keyword",
+                              "subject lcsh", "date digital", "date original", "date",
+                              "publisher", "contributor", "type", "format", "source", "language", "relation",
+                              "coverage temporal", "coverage spatial", "rights", "donor", "description", "acquisition",
+                              "citation", "processed by", "last updated", "bibliography"]
+    # list of all possible row titles for storing information
+    table_row_titles = ["Title", "Alt. Title", "Identifier", "Creator", "Alt. Creator", "Alt. Creators", "Subject Keyword",
+                        "Subject LCSH", "Date digital", "Date original", "Date",
+                        "Publisher", "Contributor", "Type", "Format", "Source", "Language", "Relation",
+                        "Coverage Temporal", "Coverage Spatial", "Rights", "Donor", "Description", "Acquisition",
+                        "Citation", "Processed by", "Last updated", "Bibliography"]
+    count_key = 0         # stores how many keys have been saved
+    row_title_list = []   # list of all the row titles
+    row_info_list = []    # list of all the row information
 
-                        if count_data != 0:
-                            bibliography_text_retrieval(table_data, row_info_list)
+    for tbody in table:     # for each tbody in the table
+        if tbody != "\n" and tbody.name != "colgroup":      # if tbody is not a new line or colgroup tag
+            for row in tbody.children:                      # for each row in the table
+                if row != "\n"and row.name != "colgroup":   # if row is not a new line or colgroup tag
+                    for table_data in row.children:         # for each table data in the children of the rows
+                        if table_data != "\n" and table_data.name != "colgroup":   # if table data is not a new line or colgroup tag
+                            if count_data == 0:             # if this is the first item
+                                bibliography_text_retrieval(table_data, row_title_list)  # recursively get the text
 
-                        # get_tags_text(table_data)
-                        # if len(table_data.contents) != 0:
-                        #     for p in table_data.children:  # gets the information/tags in the tag p
-                        #         if p != "\n":
-                        #             # store the information two at a time
-                        #             if count_data == 0:
-                        #                 title = p.string  # if the count is 0 then put the information in variable 1
-                        #                 count_data += 1
-                        #             elif count_data != 0:  # if the count is not 0 then put the information in variable 2
-                        #                 info = p.string
-                        #                 count_data += 1
-                        # if table_data.children > 1:
-                        #     for index in bibliography_dict:
-                        #         if len(bibliography_dict) % 2 == 0:
+                            if count_data != 0:             # if this is the second item
+                                bibliography_text_retrieval(table_data, row_info_list)  # recursively get the text
 
-                        # else:
-                        #     if table_data.string != "\n":
-                        #         # store the information two at a time
-                        #         if count_data == 0:
-                        #             if not table_data.string:
-                        #                 title = "None"
-                        #                 count_data += 1
-                        #             else:
-                        #                 title = table_data.string  # if the count is 0 then put the information in variable 1
-                        #                 count_data += 1
-                        #         elif count_data != 0:  # if the count is not 0 then put the information in variable 2
-                        #             if not table_data.string:
-                        #                 info = "None"
-                        #                 count_data += 1
-                        #             else:
-                        #                 info = table_data.string
-                        #                 count_data += 1
-                        count_data += 1
-            if count_data > 1:  # if count is 2 then reset the count
-                count_data = 0
-                if len(row_title_list) == len(row_info_list):
-                    for i in range(len(row_title_list)):
-                        if row_title_list[i].lower() not in table_row_titles:
-                            # bibliography_dict = {}
-                            return bibliography_dict, True
-                        bibliography_dict[row_title_list[i]] = row_info_list[i]
-                        count_key += 1
-                    row_title_list = []
-                    row_info_list = []
-                else:
-                    full_title = ""
-                    full_info = ""
-                    for title in row_title_list:
-                        full_title += title
-                    for info in row_info_list:
-                        full_info += info
-                    if full_title.lower() not in table_row_titles:
-                        # bibliography_dict = {}
-                        return bibliography_dict, True
-                    bibliography_dict[full_title] = full_info
-                    count_key += 1
-                    row_title_list = []
-                    row_info_list = []
-                # if title == None:
-                #     return bibliography_dict, False
-                # if title.lower() not in table_row_titles:
-                #     return bibliography_dict, False
-                # bibliography_dict[title] = info  # store variables into the dictionary with key and value
-                # count_key += 1
-                # title = ""
-                # info = ""
-    if 5 <= count_key <= len(table_row_titles)-5:
-        return bibliography_dict, True
+                            count_data += 1                 # increment counter of how much data has been stored
+
+                if count_data > 1:                          # if we have at least two data items
+                    count_data = 0                          # reset counter
+                    if len(row_title_list) == len(row_info_list):  # if the length of title list and info list are the same
+                        for i in range(len(row_title_list)):       # for each item
+                            if row_title_list[i].lower() not in table_row_titles_lower:  # if the current item is not in the reference list
+                                is_part_of_dict = False            # assume it is not a part of the bibliography
+                                for title in table_row_titles_lower:  # for each item in the reference list
+                                    # if the reference item and the row title are similar but not an exact match
+                                    if levenshtein_ratio_and_distance(title, row_title_list[i].lower(), True) >= .80:
+                                        is_part_of_dict = True  # title is a part of the bibliography
+                                        item_index = table_row_titles_lower.index(title)  # index of the reference item
+                                        # add the item to the bibliography using the storing list and index
+                                        # this is so the title that is stored is formatted correctly
+                                        bibliography_dict[table_row_titles[item_index]] = row_info_list[i]
+                                        count_key += 1  # increment how many keys have been saved
+                                        break
+                                if not is_part_of_dict:             # if no reference items match
+                                    bibliography_dict = {}          # clear the dictionary
+                                    return bibliography_dict, True  # return empty dictionary
+                            else:  # if the current item is in the reference list
+                                bibliography_dict[row_title_list[i]] = row_info_list[i]  # add item to the dictionary
+                                count_key += 1  # increment how many keys have been saved
+                        row_title_list = []     # clear the title lists
+                        row_info_list = []      # clear the info lists
+                    else:  # if the length of title list and info list are not the same
+                        full_title = ""   # string for holding all of the text in the title list
+                        full_info = ""    # string for holding all of the text in the info list
+                        for title in row_title_list:  # for each title in the list
+                            full_title += title       # add the title to the full string
+                        for info in row_info_list:    # for each piece of info in the list
+                            full_info += info         # add the info to the full string
+                        if full_title.lower() not in table_row_titles_lower:  # if the title is not in the reference list
+                            is_part_of_dict = False                         # assume it is not part of the bibliography
+                            for title in table_row_titles_lower:
+                                # if the reference item and the row title are similar but not an exact match
+                                if levenshtein_ratio_and_distance(title, full_title, True) >= .80:
+                                    is_part_of_dict = True  # title is a part of the bibliography
+                                    item_index = table_row_titles_lower.index(title)  # index of the reference item
+                                    # add the item to the bibliography using the storing list and index
+                                    # this is so the title that is stored is formatted correctly
+                                    bibliography_dict[table_row_titles[item_index]] = full_info
+                                    count_key += 1  # increment how many keys have been saved
+                                    break
+                            if not is_part_of_dict:             # if no reference items match
+                                bibliography_dict = {}          # clear the dictionary
+                                return bibliography_dict, True  # return empty dictionary
+                        else:  # if the title is in the reference list
+                            bibliography_dict[full_title] = full_info  # add the title and info to the bibliography
+                            count_key += 1  # increment how many keys have been saved
+                        row_title_list = []  # clear the title lists
+                        row_info_list = []   # clear the info lists
+
+    if 5 <= count_key <= len(table_row_titles)-6:  # if the amount of keys saved is between 5 and 20
+        return bibliography_dict, True             # return while indicating only a portion of the bibliography was found
     else:
-        return bibliography_dict, False
+        return bibliography_dict, False            # return full bibliography
 
 
 def bibliography_text_retrieval(tag, column_list):
+    """
+    Recursive function for getting text from table data
+    :param tag: Beautiful Soup tag object
+    :param column_list: List containing all the information in a column within a specific row
+    :return: None
+    """
 
-    if tag.string:  # if we are at the last descendant (the text
-        text = ""
-        if "\n" in tag.string:
-            for piece in tag.string.split("\n"):
-                if piece != "":
-                    text += piece + " "
-        else:
-            text = tag.string
-        if isinstance(text, bs4.element.NavigableString):
-            column_list.append(text)  #
+    if tag.string:                       # if we are at the last descendant (the text of the tag)
+        text = ""                        # text that will be appended to column list
+        if "\n" in tag.string:           # if there exists a new line character within the tag's string
+            for piece in tag.string.split("\n"):  # split on new line character to ignore them
+                if piece != "":                   # if the current part of the split string is not empty
+                    text += piece + " "           # add the part and a space
+        else:                                     # if there is not a new line character
+            text = tag.string                     # add the tag's string to the text variable
+        if isinstance(text, bs4.element.NavigableString):    # if the type of text is a Navigable String
+            column_list.append(text)                         # if it is append text to the column list
         return
-    for child in tag.children:  # for each of the current tag's children
-        bibliography_text_retrieval(child, column_list)  # recursive function call to build the transcript
-    return   # return the full text
+    for child in tag.children:                               # for each of the current tag's children
+        bibliography_text_retrieval(child, column_list)      # recursive function call to build the transcript
+    return                                                   # return the full text
 
 
 def check_if_guide(page_soup, page):
-    header_tags = ["h1", "h2", "h3", "h4", "h5", "h6"]
-    entry_title = ""
-    for header in header_tags:
-        entry_title = page_soup.find_all(header, attrs={"class": "entry-title"})
-    if entry_title:
-        if "GUIDE" in entry_title:
-            page.is_guide = True
-
-
-def dir_dive():
-    """
-    A function to find all the names of .tif's and .jpg's
-    :return: A list of names of files
-    """
-    os.chdir("/Volumes/Elements/PMSS_ARCHIVE")
-    tifs = []
-    img_count = 0
-    for root, dirs, files in os.walk(".", topdown=False):
-        for name in files:
-            if name[-4:] == ".tif" or name[-4:] == ".jpg":
-                tifs.append(name[:-4])
-                img_count += 1
-    print(img_count)
-    return tifs
-
-
-def compare_page_to_hdd(pages, tif_list):
-    """
-    WIP
-    :param pages:
-    :param tif_list:
-    :return:
-    """
-    for page in pages:
-        for image in page.images.keys():
-            if image in tif_list:
-                print("{} from {}: True".format(image, page.html))
-            else:
-                print("{} from {}: False".format(image, page.html))
-
-
-def extract_image_info():
-    """
-    WIP
-    :return:
-    """
-    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_PHOTOS/DSCF0014.jpg")
-    exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
-    print(exif)
-    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_13_education/education_series_13/jpg_educat_series_13/1940s_unknown_ed_obligation_015.jpg")
-    exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
-    print(exif)
-    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_REPORTS/1937-38_annual_board_report/jpg_1937_38_annual_board/1937-38_boar002.jpg")
-    if img._getexif():
-        exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
-        print(exif)
-
-    with Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_13_education/little_school/little_school_001.tif") as img:
-        meta_dict = {TAGS[key]: img.tag[key] for key in img.tag.keys()}
-        print(meta_dict)
+    header_tags = ["h1", "h2"]   # header tags we need to check in
+    for header in header_tags:   # for each header in the list of header tags
+        entry_title = page_soup.find(header, attrs={"class": "entry-title"})  # finds and stores the tag who's class is entry-title
+        if entry_title:                             # if the tag was found
+            if entry_title.string:                  # if the tag has a string
+                if "GUIDE" in entry_title.string:   # if GUIDE is in that string
+                    page.is_guide = True            # mark page as being a GUIDE page
 
 
 def pages_info(text, url):
@@ -565,21 +569,20 @@ def pages_info(text, url):
     :param url: The url for the webpage
     :return: page object
     """
-    current_page = Page()
-    print(url)
+    current_page = Page()         # creates a new page object
     web_page = BeautifulSoup(text, 'html.parser')
     current_page.images = image_info(web_page)
     captions = find_captions(web_page)
     image_caption_linking(captions, current_page.images)
     # TODO: The following 3 lines are for getting bibliographies
-    current_page.bibliography, partial_bib = bibliography_pairings(web_page)
-    if partial_bib:
-        print(f"Partial bibliography was found at: {url}")
-        # input()
-    current_page.html = url
+    current_page.bibliography, partial_bib = bibliography_pairings(web_page)   # check for bibliographies on the page
+    if partial_bib:                               # if there exists a partial bibliography
+        current_page.partial_bibliography = True  # marks current page as having a bibliography
+        print(f"Partial bibliography was found at: {url}")   # prints a message that the url has a partial bibliography
+    current_page.url = url
     check_if_guide(web_page, current_page)
     # TODO: This is for getting transcriptions
-    # find_transcriptions(web_page, current_page.images)
+    find_transcriptions(web_page, current_page.images)
     # TODO: Print out all the information gathered from the page
     show_results(current_page)
     return current_page
@@ -588,21 +591,19 @@ def pages_info(text, url):
 def show_results(page):
     """
     Shows the list of pages that we visit
-    :param page_list: A list of all the web pages
+    :param page: List of all the web pages
     :return: None
     """
-    print(page.html + "\n")
-    page.view_bibliography()
-    print()
-    for image in page.images.keys():    # for an image in the pages return a list of keys from dictionary
-        print(image)
-        print(page.images[image])
+    print(page.url + "\n\n")              # prints the current pages URL
+    for image in page.images.keys():      # for an image in the pages return a list of keys from dictionary
+        print(image)                      # prints image's file name
+        print(page.images[image])         # prints image information
 
 
 def web(links_visited, web_url, pages_list):
     """
     Web Crawler that will scan through the pmss webepage and find all different links from various pages
-    :param links_visited: A list that will store all of the links visited through the crawler
+    :param links_visited: List that will store all of the links visited through the crawler
     :param web_url: The Urls that will be visited
     :return: None
     """
@@ -611,10 +612,10 @@ def web(links_visited, web_url, pages_list):
         domain = split_link[0] + split_link[1]  # stores the domain
     else:
         return
-    ext = ["jpg", "png", "tif"]
+    ext = ["jpg", "png", "tif"]            # extensions of images
     if domain != "https://pmsswpengine":   # base case we always need this url for our domain
-        return                          # it will only scrape data within the domain of pmss
-    if web_url in links_visited:  # base case if we have already visited the link we do not want to re-visit it over
+        return                             # it will only scrape data within the domain of pmss
+    if web_url in links_visited:           # base case if we have already visited the link we do not want to re-visit it over
         return
     # TODO: If you want to change the number of pages to crawl through, change the number below
     if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
@@ -630,71 +631,93 @@ def web(links_visited, web_url, pages_list):
     pages_list.append(pages_info(plain, web_url))  # append the page to a list after getting info for it
     page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
     for link in page_soup.findAll('a'):  # finds all a tags within html
-        if not link.get("class"):    # avoid the html tag with class
+        if not link.get("class"):        # avoid the html tag with class
             if len(links_visited) > 500:
                 return
-            # title_link = link.get('title')  # gets the title of the link
-            # print(title_link)
-            if link.contents:
-                if link.contents[0].name != "img":
-                    if link.parent:
+            if link.contents:            # checks to make sure there are contents before we get the name
+                if link.contents[0].name != "img":  # if the link is not for an image
+                    if link.parent:                 # if the link has a parent tag
                         try:
-                            if link.parent.get("class")[0] == "must-log-in":
-                                return
-                        except TypeError:
-                            pass
+                            if link.parent.get("class")[0] == "must-log-in":   # if the link goes to a log in page
+                                return                                         # ignore this link
+                        except TypeError:                                      # if a TypeError occurs
+                            pass                                               # keep code going
                     links_destination = link.get('href')  # gets the href and this determines the links destination
-                    # print(links_destination)
                     web(links_visited, links_destination, pages_list)  # recursive call to keep calling the different links
 
 
 def create_master_list(pages_list):
     """
     Combine all of the images and bibliographies into one structure respectively
-    :param pages_list: A list of pages
-    :return: A complete list of all the bibliographies and all of the images
+    :param pages_list: List of pages
+    :return: Complete list of all the bibliographies, all of the images, and list of guide pages
     """
-    list_of_images = {}
-    list_of_bibs = []
+    list_of_images = {}   # Dictionary that will contain all the images
+    list_of_bibs = []     # List that will contain all the bibliographies
+    guide_pages = []      # List that will contain all the URLs for the guide pages
 
-    for page in pages_list:
-        for image in page.images.keys():
+    for page in pages_list:                 # for each page in the list of pages
+        for image in page.images.keys():    # for each image in the pages dictionary of images
             try:
-                if list_of_images[image]:
-                    list_of_images[image].alt_captions.append(list_of_images[image].caption)
+                if list_of_images[image]:   # if image key is already in the list of images
+                    list_of_images[image].alt_captions.append(list_of_images[image].caption)  # add current caption to alt captions
             except KeyError:
-                list_of_images[image] = page.images[image]
-            # list_of_images[image] = page.images[image]
-        if page.bibliography:
-            list_of_bibs.append(page.bibliography)
-    return list_of_bibs, list_of_images
+                list_of_images[image] = page.images[image]    # if image is not in the dictionary add it to it
+        if page.bibliography:                                 # if there is a bibliography for the page
+            list_of_bibs.append(page.bibliography)            # append bibliography to the list of bibliographies
+        if page.is_guide:                                     # if this is a GUIDE page
+            guide_pages.append(page.url)                     # append the URL to the list of GUIDE URLs
+    return list_of_bibs, list_of_images, guide_pages          # return all 3 structures
 
 
-start_time = time.time()
+def print_master_lists(bibliography_list, images_list, guide_pages):
+    """
+    Prints a master list of all of the bibliographies, images, and pages that are considered GUIDE pages
+    :param bibliography_list: List of all bibliography dicts
+    :param images_list: Dictionary of all image objects and file names
+    :param guide_pages: List of all URLs that are guide pages
+    :return: None
+    """
+    for bib in bibliography_list:      # for each bibliography in the bibliography list
+        for row_title in bib.keys():   # for each row in the bibliography
+            print(f"{row_title}: {bib[row_title]}")   # print each column
+        print()
+    for image in images_list:              # for each image in the images list
+        print(image)                       # print image information
+    for page in guide_pages:               # for each page in the guide pages list
+        print(page)                        # print URL of page
+
+
+def save_guide_urls(url_list):
+    """
+    Outputs a list of URLs that are website guides to a file.
+    :param url_list: List of guide URLS
+    :return: None
+    """
+    with open("guide_urls", "a") as file:  # opens the file in append mode
+        for url in url_list:               # for each url in the url list
+            file.write(f"{url}\n")         # puts URL in the file
 
 
 def main():
     # TODO: uncomment the following 5 lines to run for a specific page
     # path = os.getcwd() + "/html/"  # TODO: make html folder in same directory if it doesn't exist
-    # file = "CONIFER INDEX - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm" # TODO: put filename here
+    # file = "GUIDE to BOOK and PERIODICAL Collections - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"  # TODO: put filename here
     # f = open(path + file)
     # pmss_pages = pages_info(f, file)
-    # show_results(pmss_pages)
     #  write_csv(pmss_pages)
     pages_list = []
     links_visited = []  # list of links visited
     web(links_visited, 'https://pmss.wpengine.com/', pages_list)
-    print(pages_list)
-    bib_master_list, images_master_list = create_master_list(pages_list)
-    for bib in bib_master_list:
-        for row_title in bib.keys():
-            print(f"{row_title}: {bib[row_title]}")
-        print()
-    for image in images_master_list:
-        print("Image in Master List:")
-        print(image)
+    print("~~----Now showing the result's of the scrape----~~\n\n\n")
+    bib_master_list, images_master_list, guide_pages = create_master_list(pages_list)  # Save the master lists to variables
+    print_master_lists(bib_master_list, images_master_list, guide_pages)  # using the master lists, print out the info
 
+    # Time it took to run the program
     print(f"--- {time.time() - start_time} seconds ---")
+
+
+start_time = time.time()
 
 
 if __name__ == "__main__":
