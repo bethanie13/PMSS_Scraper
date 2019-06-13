@@ -16,7 +16,7 @@ import time
 import bs4
 
 
-def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
+def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
     # Code adapted from Francisco Javier Carrera Arias from
     # https://www.datacamp.com/community/tutorials/fuzzy-string-python
 
@@ -88,21 +88,6 @@ def dir_dive():
     return tifs
 
 
-def compare_page_to_hdd(pages, tif_list):
-    """
-    WIP
-    :param pages:
-    :param tif_list:
-    :return:
-    """
-    for page in pages:
-        for image in page.images.keys():
-            if image in tif_list:
-                print("{} from {}: True".format(image, page.url))
-            else:
-                print("{} from {}: False".format(image, page.url))
-
-
 def extract_image_info():
     """
     WIP
@@ -124,6 +109,94 @@ def extract_image_info():
         print(meta_dict)
 
 
+def compare_page_to_hdd(pages, tif_list):
+    """
+    WIP
+    :param pages:
+    :param tif_list:
+    :return:
+    """
+    for page in pages:
+        for image in page.images.keys():
+            if image in tif_list:
+                print("{} from {}: True".format(image, page.url))
+            else:
+                print("{} from {}: False".format(image, page.url))
+
+
+def web(links_visited, web_url, pages_list):
+    """
+    Web Crawler that will scan through the pmss webepage and find all different links from various pages
+    :param links_visited: List that will store all of the links visited through the crawler
+    :param web_url: The Urls that will be visited
+    :return: None
+    """
+    split_link = web_url.split(".")  # splits the link on a period to get domain
+    if len(split_link) > 1:  # base case to ensure that there is a link
+        domain = split_link[0] + split_link[1]  # stores the domain
+    else:
+        return
+    ext = ["jpg", "png", "tif"]  # extensions of images
+    if domain != "https://pmsswpengine":  # base case we always need this url for our domain
+        return  # it will only scrape data within the domain of pmss
+    if web_url in links_visited:  # base case if we have already visited the link we do not want to re-visit it over
+        return
+    # TODO: If you want to change the number of pages to crawl through, change the number below
+    if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
+        return
+    if web_url.split(".")[-1] in ext:  # split url if the end of url is in ext just return
+        return
+    links_visited.append(web_url)  # append the urls that we visit to a list of links visited
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
+      (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}  # the User-Agent header makes our code not look like a bot
+    result = requests.get(web_url, headers=headers)
+    plain = result.text  # raw html
+
+    pages_list.append(pages_info(plain, web_url))  # append the page to a list after getting info for it
+    page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
+    for link in page_soup.findAll('a'):  # finds all a tags within html
+        if not link.get("class"):  # avoid the html tag with class
+            if len(links_visited) > 500:
+                return
+            if link.contents:  # checks to make sure there are contents before we get the name
+                if link.contents[0].name != "img":  # if the link is not for an image
+                    if link.parent:  # if the link has a parent tag
+                        try:
+                            if link.parent.get("class")[0] == "must-log-in":  # if the link goes to a log in page
+                                return  # ignore this link
+                        except TypeError:  # if a TypeError occurs
+                            pass  # keep code going
+                    links_destination = link.get('href')  # gets the href and this determines the links destination
+                    web(links_visited, links_destination,
+                        pages_list)  # recursive call to keep calling the different links
+
+
+def pages_info(text, url):
+    """
+    Driver function for getting information for a page.
+    :param text: full html as plain text
+    :param url: The url for the webpage
+    :return: page object
+    """
+    current_page = Page()         # creates a new page object
+    web_page = BeautifulSoup(text, 'html.parser')  # Create a new Beautiful Soup object
+    current_page.images = image_info(web_page)
+    captions = find_captions(web_page)
+    image_caption_linking(captions, current_page.images)
+    # TODO: The following 3 lines are for getting bibliographies
+    current_page.bibliography, partial_bib = bibliography_pairings(web_page)   # check for bibliographies on the page
+    if partial_bib:                               # if there exists a partial bibliography
+        current_page.partial_bibliography = True  # marks current page as having a bibliography
+        print(f"Partial bibliography was found at: {url}")   # prints a message that the url has a partial bibliography
+    current_page.url = url                        # save the current url with in the page's attributes
+    check_if_guide(web_page, current_page)
+    # TODO: This is for getting transcriptions
+    find_transcriptions(web_page, current_page.images)
+    # TODO: Print out all the information gathered from the page
+    show_results(current_page)
+    return current_page
+
+
 def image_info(page_soup):
     """
     Finds all images on the page and collects as much information as it can
@@ -132,9 +205,8 @@ def image_info(page_soup):
     """
     images_dict = {}            # create a dictionary for the images
     for image in page_soup.find_all('img'):  # for an image it will find all of the img tags within the html of the page
-        if image.get("src"):
-            img_src = image.get("src")
-            temp = PMSS_Image()
+        if image.get("src"):                 # if our image has a src attribute
+            temp = PMSS_Image()              # initialize a new image instance
 
             # Pull out the id that will be used to find this image's caption
             caption_link(image, temp)
@@ -148,10 +220,10 @@ def image_info(page_soup):
             # If resolution information is in the filename, strip that information out
             temp.strip_resolution()
 
-            if image.parent.name == "figure":
-                for tag in image.parent.children:
-                    if tag.name == "figcaption":
-                        temp.caption = tag.string
+            if image.parent.name == "figure":       # If we are looking at an image from a figure tag
+                for tag in image.parent.children:   # for each of the tag's siblings
+                    if tag.name == "figcaption":    # if a sibling's tag namme is figcaption
+                        temp.caption = tag.string   # save the text as it is the caption for our image
 
             if temp.file_name != "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg":  # Ignore the header image
                 # Copy the image to a dictionary
@@ -210,7 +282,7 @@ def find_captions(page_soup):
     for caption in page_soup.find_all('dd'):     # for every caption look for the tag "dd"
         temp = Caption()                       # temporarily stores a caption for class constructor
         temp.image_link = caption.get('id')     # retrieves the caption through the tag of "id" which will be image link
-        temp.caption = caption.string[5:-5]
+        temp.caption = caption.string[5:-5]     # save the caption ignoring all the \n's near it
         captions_dict[temp.image_link] = copy.copy(temp)  # makes a shallow copy of the image link stored in the dictionary
     for caption in page_soup.find_all('p'):         # for every caption find the "p" tags
         temp = Caption()                      # temporarily stores a caption for class constructor
@@ -230,8 +302,8 @@ def image_caption_linking(captions_dict, images_dict):
     """
     for caption in captions_dict.keys():  # for every caption of an image in the caption dictionary
         for image in images_dict.keys():  # for every image in the image dictionary
-            if images_dict[image].caption_link:
-                if not images_dict[image].caption:
+            if images_dict[image].caption_link:  # If a caption link id was found
+                if not images_dict[image].caption:  # if a caption has not been found yet
                     if captions_dict[caption].image_link == images_dict[
                             image].caption_link:  # if the caption dictionary matches the image dictionary
                         images_dict[image].caption = captions_dict[caption].caption  # then the image will go with the caption
@@ -398,36 +470,6 @@ def record_transcript(img_dict, recording_state, current_file, tag):
         img_dict[current_file].transcription += str(tag.string)  # associate image with the transcript
 
 
-def write_csv(page_list):
-    """
-    Uses the csv library to write .csv files containing the image's information
-    :param page_list: A list of pages that will have their contents output
-    :return:
-    """
-    to_csv = input("Do you want to create csv files? (y/n): ")  # input check for if the user wants to output csv files
-    csv_path = os.getcwd() + "/csv/"  # using the os module, the current directory plus /csv/ is where they will be stored
-    try:  # try to go into the csv directory
-        os.chdir(csv_path)
-    except FileNotFoundError:  # if the csv directory doesnt exist
-        os.mkdir(csv_path)  # make the csv directory
-        os.chdir(csv_path)  # change to the csv directory
-    if to_csv.lower() == "y":  # if the user responded yes
-        for page in page_list:  # for each page in our list of page objects
-            write_page = input(f"Do you want to output {page.url}? (y/n): ")  # Ask the user if they want to output the page
-            if write_page.lower() == "y":  # if the user said yes to output the page
-                ext_len = len(page.url.split(".")[-1])  # get the length of the extension
-                csv_name = page.url[:-ext_len - 1] + ".csv"  # remove the current extension and add .csv to the end
-
-                with open(csv_name, 'w') as csvfile:  # open csv file for the page we are currently on
-                    file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
-                    csv_data = [["Filename", "Transcription", "Upload Date"]]  # the first row are the column headings
-                    for image in page.images.keys():  # for each image in our images dictionary
-                        csv_data.append([page.images[image].file_name, "\"" + page.images[image].transcription + "\"",
-                                         page.images[image].upload_date])  # append the file name, transcription, and upload date
-                    file_writer.writerows(csv_data)  # write the information to the file
-                    csvfile.close()  # close the file
-
-
 def bibliography_pairings(page_soup):
     """
     Pairs the information in the table of the bibliography together with the appropriate data.
@@ -562,32 +604,6 @@ def check_if_guide(page_soup, page):
                     page.is_guide = True            # mark page as being a GUIDE page
 
 
-def pages_info(text, url):
-    """
-    Driver function for getting information for a page.
-    :param text: full html as plain text
-    :param url: The url for the webpage
-    :return: page object
-    """
-    current_page = Page()         # creates a new page object
-    web_page = BeautifulSoup(text, 'html.parser')
-    current_page.images = image_info(web_page)
-    captions = find_captions(web_page)
-    image_caption_linking(captions, current_page.images)
-    # TODO: The following 3 lines are for getting bibliographies
-    current_page.bibliography, partial_bib = bibliography_pairings(web_page)   # check for bibliographies on the page
-    if partial_bib:                               # if there exists a partial bibliography
-        current_page.partial_bibliography = True  # marks current page as having a bibliography
-        print(f"Partial bibliography was found at: {url}")   # prints a message that the url has a partial bibliography
-    current_page.url = url
-    check_if_guide(web_page, current_page)
-    # TODO: This is for getting transcriptions
-    find_transcriptions(web_page, current_page.images)
-    # TODO: Print out all the information gathered from the page
-    show_results(current_page)
-    return current_page
-
-
 def show_results(page):
     """
     Shows the list of pages that we visit
@@ -598,52 +614,6 @@ def show_results(page):
     for image in page.images.keys():      # for an image in the pages return a list of keys from dictionary
         print(image)                      # prints image's file name
         print(page.images[image])         # prints image information
-
-
-def web(links_visited, web_url, pages_list):
-    """
-    Web Crawler that will scan through the pmss webepage and find all different links from various pages
-    :param links_visited: List that will store all of the links visited through the crawler
-    :param web_url: The Urls that will be visited
-    :return: None
-    """
-    split_link = web_url.split(".")  # splits the link on a period to get domain
-    if len(split_link) > 1:       # base case to ensure that there is a link
-        domain = split_link[0] + split_link[1]  # stores the domain
-    else:
-        return
-    ext = ["jpg", "png", "tif"]            # extensions of images
-    if domain != "https://pmsswpengine":   # base case we always need this url for our domain
-        return                             # it will only scrape data within the domain of pmss
-    if web_url in links_visited:           # base case if we have already visited the link we do not want to re-visit it over
-        return
-    # TODO: If you want to change the number of pages to crawl through, change the number below
-    if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
-        return
-    if web_url.split(".")[-1] in ext:  # split url if the end of url is in ext just return
-        return
-    links_visited.append(web_url)   # append the urls that we visit to a list of links visited
-    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
-     (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}   # the User-Agent header makes our code not look like a bot
-    result = requests.get(web_url, headers=headers)
-    plain = result.text  # raw html
-
-    pages_list.append(pages_info(plain, web_url))  # append the page to a list after getting info for it
-    page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
-    for link in page_soup.findAll('a'):  # finds all a tags within html
-        if not link.get("class"):        # avoid the html tag with class
-            if len(links_visited) > 500:
-                return
-            if link.contents:            # checks to make sure there are contents before we get the name
-                if link.contents[0].name != "img":  # if the link is not for an image
-                    if link.parent:                 # if the link has a parent tag
-                        try:
-                            if link.parent.get("class")[0] == "must-log-in":   # if the link goes to a log in page
-                                return                                         # ignore this link
-                        except TypeError:                                      # if a TypeError occurs
-                            pass                                               # keep code going
-                    links_destination = link.get('href')  # gets the href and this determines the links destination
-                    web(links_visited, links_destination, pages_list)  # recursive call to keep calling the different links
 
 
 def create_master_list(pages_list):
@@ -697,6 +667,36 @@ def save_guide_urls(url_list):
     with open("guide_urls", "a") as file:  # opens the file in append mode
         for url in url_list:               # for each url in the url list
             file.write(f"{url}\n")         # puts URL in the file
+
+
+def write_csv(page_list):
+    """
+    Uses the csv library to write .csv files containing the image's information
+    :param page_list: A list of pages that will have their contents output
+    :return:
+    """
+    to_csv = input("Do you want to create csv files? (y/n): ")  # input check for if the user wants to output csv files
+    csv_path = os.getcwd() + "/csv/"  # using the os module, the current directory plus /csv/ is where they will be stored
+    try:  # try to go into the csv directory
+        os.chdir(csv_path)
+    except FileNotFoundError:  # if the csv directory doesnt exist
+        os.mkdir(csv_path)  # make the csv directory
+        os.chdir(csv_path)  # change to the csv directory
+    if to_csv.lower() == "y":  # if the user responded yes
+        for page in page_list:  # for each page in our list of page objects
+            write_page = input(f"Do you want to output {page.url}? (y/n): ")  # Ask the user if they want to output the page
+            if write_page.lower() == "y":  # if the user said yes to output the page
+                ext_len = len(page.url.split(".")[-1])  # get the length of the extension
+                csv_name = page.url[:-ext_len - 1] + ".csv"  # remove the current extension and add .csv to the end
+
+                with open(csv_name, 'w') as csvfile:  # open csv file for the page we are currently on
+                    file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
+                    csv_data = [["Filename", "Transcription", "Upload Date"]]  # the first row are the column headings
+                    for image in page.images.keys():  # for each image in our images dictionary
+                        csv_data.append([page.images[image].file_name, "\"" + page.images[image].transcription + "\"",
+                                         page.images[image].upload_date])  # append the file name, transcription, and upload date
+                    file_writer.writerows(csv_data)  # write the information to the file
+                    csvfile.close()  # close the file
 
 
 def main():
