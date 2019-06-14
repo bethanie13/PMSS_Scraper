@@ -14,7 +14,7 @@ from PIL import Image, ExifTags
 from PIL.TiffTags import TAGS
 import time
 import bs4
-
+from Post import Post
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
     # Code adapted from Francisco Javier Carrera Arias from
@@ -77,14 +77,13 @@ def dir_dive():
     :return: A list of names of files
     """
     os.chdir("/Volumes/Elements/PMSS_ARCHIVE")
-    tifs = []
-    img_count = 0
+    tifs = {}
     for root, dirs, files in os.walk(".", topdown=False):
         for name in files:
+            temp = PMSS_Image()
             if name[-4:] == ".tif" or name[-4:] == ".jpg":
-                tifs.append(name[:-4])
-                img_count += 1
-    print(img_count)
+                temp.file_name = name
+                tifs[name[:-4]] = temp
     return tifs
 
 
@@ -124,6 +123,32 @@ def compare_page_to_hdd(pages, tif_list):
                 print("{} from {}: False".format(image, page.url))
 
 
+def extract_csv_information(filename):
+    csv_info_list = []
+    with open(filename) as file:
+        info = file.read()
+        info = info.split("\n")
+        for row in info:
+            temp = Post()
+            col_count = 0
+            for column in row.split(","):
+                if col_count == 0:
+                    temp.id = column
+                elif col_count == 1:
+                    temp.post_date = column
+                elif col_count == 2:
+                    temp.post_title = column
+                elif col_count == 3:
+                    temp.post_content = column
+                elif col_count == 4:
+                    temp.post_excerpt = column
+                elif col_count == 5:
+                    temp.meta_value = column.split("/")[-1]
+                col_count += 1
+            csv_info_list.append(temp)
+    return csv_info_list
+
+
 def web(links_visited, web_url, pages_list):
     """
     Web Crawler that will scan through the pmss webepage and find all different links from various pages
@@ -142,8 +167,8 @@ def web(links_visited, web_url, pages_list):
     if web_url in links_visited:  # base case if we have already visited the link we do not want to re-visit it over
         return
     # TODO: If you want to change the number of pages to crawl through, change the number below
-    if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
-        return
+    # if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
+    #     return
     if web_url.split(".")[-1] in ext:  # split url if the end of url is in ext just return
         return
     links_visited.append(web_url)  # append the urls that we visit to a list of links visited
@@ -156,8 +181,8 @@ def web(links_visited, web_url, pages_list):
     page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
     for link in page_soup.findAll('a'):  # finds all a tags within html
         if not link.get("class"):  # avoid the html tag with class
-            if len(links_visited) > 500:
-                return
+            # if len(links_visited) > 500:
+            #     return
             if link.contents:  # checks to make sure there are contents before we get the name
                 if link.contents[0].name != "img":  # if the link is not for an image
                     if link.parent:  # if the link has a parent tag
@@ -189,7 +214,7 @@ def pages_info(text, url):
         current_page.partial_bibliography = True  # marks current page as having a bibliography
         print(f"Partial bibliography was found at: {url}")   # prints a message that the url has a partial bibliography
     current_page.url = url                        # save the current url with in the page's attributes
-    check_if_guide(web_page, current_page)
+    # check_if_guide(web_page, current_page)
     # TODO: This is for getting transcriptions
     find_transcriptions(web_page, current_page.images)
     # TODO: Print out all the information gathered from the page
@@ -699,6 +724,33 @@ def write_csv(page_list):
                     csvfile.close()  # close the file
 
 
+def compare_scraped_and_phpmyadmin_images(list_of_posts: list, image_dictionary: dict):
+    image_matches = 0
+    print(len(list_of_posts))
+    print(len(image_dictionary))
+    for post in list_of_posts:
+        for scraped_img in image_dictionary.keys():
+            if post.meta_value == image_dictionary[scraped_img].file_name:
+                print(f"{post.meta_value}: True")
+                image_matches += 1
+            # else:
+            #     if levenshtein_ratio_and_distance(web_img.meta_value, images_master_list[scraped_img].file_name, True) >= .80:
+            #         print(f"{web_img.meta_value}: True")
+            #         image_matches += 1
+    print(f"{image_matches}/{len(list_of_posts)} images matched")
+
+
+def run_time():
+    """
+    Calculates and prints out how long the program ran
+    :return: None
+    """
+    time_run = time.time() - start_time
+    mins = time_run // 60
+    secs = time_run - (60 * mins)
+    print(f"--- {mins}m {secs}s run time ---")
+
+
 def main():
     # TODO: uncomment the following 5 lines to run for a specific page
     # path = os.getcwd() + "/html/"  # TODO: make html folder in same directory if it doesn't exist
@@ -711,10 +763,23 @@ def main():
     web(links_visited, 'https://pmss.wpengine.com/', pages_list)
     print("~~----Now showing the result's of the scrape----~~\n\n\n")
     bib_master_list, images_master_list, guide_pages = create_master_list(pages_list)  # Save the master lists to variables
-    print_master_lists(bib_master_list, images_master_list, guide_pages)  # using the master lists, print out the info
-
-    # Time it took to run the program
-    print(f"--- {time.time() - start_time} seconds ---")
+    # print_master_lists(bib_master_list, images_master_list, guide_pages)  # using the master lists, print out the info
+    # phpmyadmin_images = extract_csv_information("image_list_with_captions-j45ab3_posts.csv")
+    # hdd_images = dir_dive()
+    with open("Bibliographies_list", "a") as bib_file:
+        for bib in bib_master_list:
+            for attr in bib.keys():
+                bib_file.write(f"{attr}: {bib[attr]}\n")
+            bib_file.write("\n\n")
+    with open("images_list", "a") as img_file:
+        for img in images_master_list.keys():
+            img_file.write(f"File name: {images_master_list[img].file_name}\n"
+                           f"Caption: {images_master_list[img].caption}\n"
+                           f"Resized resolution: {images_master_list[img].image_resized_resolution[0]}x{images_master_list[img].image_resized_resolution[1]}\n" \
+                           f"Transcription: {images_master_list[img].transcription}\n"
+                           f"Upload date: {images_master_list[img].upload_date}\n\n\n")
+    # compare_scraped_and_phpmyadmin_images(phpmyadmin_images, images_master_list)
+    run_time()
 
 
 start_time = time.time()
