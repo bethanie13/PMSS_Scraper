@@ -156,15 +156,17 @@ def web(links_visited, web_url, pages_list):
     :param web_url: The Urls that will be visited
     :return: None
     """
+    urls_to_skip = ["https://pmss.wpengine.com/?page_id=3060", "https://pmss.wpengine.com/?page_id=19612",
+                    "https://pmss.wpengine.com/?page_id=48056", "https://pmss.wpengine.com/?attachment_id=3868"]
     split_link = web_url.split(".")  # splits the link on a period to get domain
     if len(split_link) > 1:  # base case to ensure that there is a link
         domain = split_link[0] + split_link[1]  # stores the domain
     else:
         return
-    ext = ["jpg", "png", "tif"]  # extensions of images
+    ext = ["jpg", "png", "tif", "ppt", "pptx"]  # extensions of images
     if domain != "https://pmsswpengine":  # base case we always need this url for our domain
         return  # it will only scrape data within the domain of pmss
-    if web_url in links_visited:  # base case if we have already visited the link we do not want to re-visit it over
+    if web_url in links_visited or web_url in urls_to_skip:  # base case if we have already visited the link we do not want to re-visit it over
         return
     # TODO: If you want to change the number of pages to crawl through, change the number below
     # if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
@@ -174,6 +176,7 @@ def web(links_visited, web_url, pages_list):
     links_visited.append(web_url)  # append the urls that we visit to a list of links visited
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
       (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}  # the User-Agent header makes our code not look like a bot
+
     result = requests.get(web_url, headers=headers)
     plain = result.text  # raw html
 
@@ -192,8 +195,16 @@ def web(links_visited, web_url, pages_list):
                         except TypeError:  # if a TypeError occurs
                             pass  # keep code going
                     links_destination = link.get('href')  # gets the href and this determines the links destination
-                    web(links_visited, links_destination,
-                        pages_list)  # recursive call to keep calling the different links
+                    if not links_destination:
+                        return
+                    try:
+                        if links_destination.split("/")[3] == "wp-admin":
+                            return
+                    except IndexError:
+                        pass
+                    if links_destination:
+                        web(links_visited, links_destination,
+                            pages_list)  # recursive call to keep calling the different links
 
 
 def pages_info(text, url):
@@ -357,7 +368,6 @@ def find_transcriptions(page_soup, img_dict):
             if div.get("class")[0] == "entry-content":  # content will hold the correct tag
                 content = div
                 break
-
     for tag in content.children:  # trying to reach the lowest level of the tag looks from children of current tag
         # if tag.name == "hr":   # tag found at end of page; stops recording
         #     recording = False
@@ -410,12 +420,10 @@ def find_transcriptions(page_soup, img_dict):
                             split_name = main_tags_child.string.split(
                                 "[")  # if .jpg found then we will then extract file name
                             current_file = split_name[-1][:-6]
-                            image_index += 1
                             if current_file not in img_dict:
                                 img_dict[current_file] = PMSS_Image()  # if the current file is not in the image dictionary
-                                img_dict[
-                                    current_file].file_name = "Outlier"  # we need to store the image into the dictionary and note that is an outlier
-
+                                img_dict[current_file].file_name = "Outlier"  # we need to store the image into the dictionary and note that is an outlier
+                                image_index += 1
                     elif "[" in main_tags_child.string:  # If we find a bracket, check if it is a filename
                         # a list of keys in our image dictionary
                         keys = list(img_dict)
@@ -425,7 +433,7 @@ def find_transcriptions(page_soup, img_dict):
                             # split the text by the closed bracket so all that's left is just the text
                             for subsection in section.split("]"):
                                 if len(keys) != 0 and image_index > len(keys):  # If we have keys in our dictionary
-                                    # if our comparison text is at least80% similar to our key,
+                                    # if our comparison text is at least 80% similar to our key,
                                     # assume they are the same
                                     print(subsection.lower())
                                     print(keys[image_index])
@@ -766,18 +774,22 @@ def main():
     # print_master_lists(bib_master_list, images_master_list, guide_pages)  # using the master lists, print out the info
     # phpmyadmin_images = extract_csv_information("image_list_with_captions-j45ab3_posts.csv")
     # hdd_images = dir_dive()
-    with open("Bibliographies_list", "a") as bib_file:
+    with open("Bibliographies_list", "w") as bib_file:
+        info_to_write = ""
         for bib in bib_master_list:
             for attr in bib.keys():
-                bib_file.write(f"{attr}: {bib[attr]}\n")
-            bib_file.write("\n\n")
-    with open("images_list", "a") as img_file:
+                info_to_write += f"{attr}: {bib[attr]}\n"
+            info_to_write += "\n\n"
+        bib_file.write(info_to_write)
+    with open("images_list", "w") as img_file:
+        info_to_write = ""
         for img in images_master_list.keys():
-            img_file.write(f"File name: {images_master_list[img].file_name}\n"
-                           f"Caption: {images_master_list[img].caption}\n"
-                           f"Resized resolution: {images_master_list[img].image_resized_resolution[0]}x{images_master_list[img].image_resized_resolution[1]}\n" \
-                           f"Transcription: {images_master_list[img].transcription}\n"
-                           f"Upload date: {images_master_list[img].upload_date}\n\n\n")
+            info_to_write += f"File name: {images_master_list[img].file_name}\n"\
+                             f"Caption: {images_master_list[img].caption}\n"\
+                             f"Resized resolution: {images_master_list[img].image_resized_resolution[0]}x{images_master_list[img].image_resized_resolution[1]}\n" \
+                             f"Transcription: {images_master_list[img].transcription}\n"\
+                             f"Upload date: {images_master_list[img].upload_date}\n\n\n"
+            img_file.write(info_to_write)
     # compare_scraped_and_phpmyadmin_images(phpmyadmin_images, images_master_list)
     run_time()
 
