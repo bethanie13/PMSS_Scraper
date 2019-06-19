@@ -157,7 +157,8 @@ def web(links_visited, web_url, pages_list):
     :return: None
     """
     urls_to_skip = ["https://pmss.wpengine.com/?page_id=3060", "https://pmss.wpengine.com/?page_id=19612",
-                    "https://pmss.wpengine.com/?page_id=48056", "https://pmss.wpengine.com/?attachment_id=3868"]
+                    "https://pmss.wpengine.com/?page_id=48056", "https://pmss.wpengine.com/?attachment_id=3868",
+                    "https://pmss.wpengine.com/farm/farm-shell-farm-field-plan-1948/"]
     split_link = web_url.split(".")  # splits the link on a period to get domain
     if len(split_link) > 1:  # base case to ensure that there is a link
         domain = split_link[0] + split_link[1]  # stores the domain
@@ -658,48 +659,45 @@ def create_master_list(pages_list):
     list_of_images = {}   # Dictionary that will contain all the images
     list_of_bibs = []     # List that will contain all the bibliographies
     guide_pages = []      # List that will contain all the URLs for the guide pages
+    transcript_counter = 0
+    caption_counter = 0
+    duplicate_counter = 0
+    alt_captions_counter = 0
+    no_caption_counter = 0
 
     for page in pages_list:                 # for each page in the list of pages
         for image in page.images.keys():    # for each image in the pages dictionary of images
             try:
                 if list_of_images[image]:   # if image key is already in the list of images
-                    list_of_images[image].alt_captions.append(list_of_images[image].caption)  # add current caption to alt captions
+                    if page.images[image].caption:
+                        if list_of_images[image].caption:
+                            if list_of_images[image].caption == page.images[image].caption:
+                                duplicate_counter += 1
+                            else:
+                                if levenshtein_ratio_and_distance(page.images[image].caption,
+                                                                  list_of_images[image].caption, True) > .80:
+                                    duplicate_counter += 1
+                                else:
+                                    list_of_images[image].alt_captions.append(page.images[image].caption)  # add current caption to alt captions
+                                    alt_captions_counter += 1
+                        else:
+                            list_of_images[image].caption = page.images[image].caption
+
             except KeyError:
                 list_of_images[image] = page.images[image]    # if image is not in the dictionary add it to it
+            if list_of_images[image].transcription:
+                transcript_counter += 1
+            if page.images[image].caption:
+                caption_counter += 1
         if page.bibliography:                                 # if there is a bibliography for the page
             list_of_bibs.append(page.bibliography)            # append bibliography to the list of bibliographies
         if page.is_guide:                                     # if this is a GUIDE page
             guide_pages.append(page.url)                     # append the URL to the list of GUIDE URLs
-    return list_of_bibs, list_of_images, guide_pages          # return all 3 structures
-
-
-def print_master_lists(bibliography_list, images_list, guide_pages):
-    """
-    Prints a master list of all of the bibliographies, images, and pages that are considered GUIDE pages
-    :param bibliography_list: List of all bibliography dicts
-    :param images_list: Dictionary of all image objects and file names
-    :param guide_pages: List of all URLs that are guide pages
-    :return: None
-    """
-    for bib in bibliography_list:      # for each bibliography in the bibliography list
-        for row_title in bib.keys():   # for each row in the bibliography
-            print(f"{row_title}: {bib[row_title]}")   # print each column
-        print()
-    for image in images_list:              # for each image in the images list
-        print(image)                       # print image information
-    for page in guide_pages:               # for each page in the guide pages list
-        print(page)                        # print URL of page
-
-
-def save_guide_urls(url_list):
-    """
-    Outputs a list of URLs that are website guides to a file.
-    :param url_list: List of guide URLS
-    :return: None
-    """
-    with open("guide_urls", "a") as file:  # opens the file in append mode
-        for url in url_list:               # for each url in the url list
-            file.write(f"{url}\n")         # puts URL in the file
+    for image in list_of_images.keys():
+        if not list_of_images[image].caption:
+            no_caption_counter += 1
+    return list_of_bibs, list_of_images, guide_pages, transcript_counter, \
+           caption_counter, duplicate_counter, alt_captions_counter, no_caption_counter   # return all 3 structures
 
 
 def write_csv(page_list):
@@ -748,6 +746,43 @@ def compare_scraped_and_phpmyadmin_images(list_of_posts: list, image_dictionary:
     print(f"{image_matches}/{len(list_of_posts)} images matched")
 
 
+def print_results(pages: list, images: dict, transcript_counter: int, caption_counter: int, duplicate_counter: int,
+                  bibliographies: list, alt_captions_counter: int, no_caption_counter: int):
+    print(f"{len(pages)} pages scraped")
+    print(f"{len(images)} images scraped")
+    print(f"{transcript_counter} transcriptions scraped")
+    print(f"{caption_counter - (duplicate_counter + alt_captions_counter)} captions scraped")
+    print(f"{no_caption_counter} images with no captions")
+    print(f"{alt_captions_counter} alternate captions scraped")
+    print(f"{duplicate_counter} duplicate captions scraped")
+    print(f"{len(bibliographies)} bibliographies scraped")
+
+
+def write_result_files(bibliographies: list, images: dict, guide_pages: list):
+    with open("Bibliographies_list", "w") as bib_file:
+        info_to_write = f"{len(bibliographies)} bibliographies\n\n"
+        for bib in bibliographies:
+            for attr in bib.keys():
+                info_to_write += f"{attr}: {bib[attr]}\n"
+            info_to_write += "\n\n"
+        bib_file.write(info_to_write)
+    with open("images_list", "w") as img_file:
+        info_to_write = f"{len(images)} images\n\n"
+        for img in images.keys():
+            info_to_write += f"File name: {images[img].file_name}\n"\
+                             f"Caption: {images[img].caption}\n"\
+                             f"Resized resolution: {images[img].image_resized_resolution[0]}x{images[img].image_resized_resolution[1]}\n" \
+                             f"Transcription: {images[img].transcription}\n"\
+                             f"Upload date: {images[img].upload_date}\n\n\n"
+        img_file.write(info_to_write)
+
+    with open("guide_urls", "w") as guide_file:  # opens the file in write mode
+        info_to_write = f"{len(guide_pages)} guide pages\n\n"
+        for url in guide_pages:               # for each url in the url list
+            info_to_write += f"{url}\n"       # puts URL in the file
+        guide_file.write(info_to_write)
+
+
 def run_time():
     """
     Calculates and prints out how long the program ran
@@ -756,7 +791,7 @@ def run_time():
     time_run = time.time() - start_time
     mins = time_run // 60
     secs = time_run - (60 * mins)
-    print(f"--- {mins}m {secs}s run time ---")
+    print(f"~~----{mins}m {secs}s run time----~~")
 
 
 def main():
@@ -769,27 +804,19 @@ def main():
     pages_list = []
     links_visited = []  # list of links visited
     web(links_visited, 'https://pmss.wpengine.com/', pages_list)
-    print("~~----Now showing the result's of the scrape----~~\n\n\n")
-    bib_master_list, images_master_list, guide_pages = create_master_list(pages_list)  # Save the master lists to variables
-    # print_master_lists(bib_master_list, images_master_list, guide_pages)  # using the master lists, print out the info
+    print("~~----Scraping Results----~~")
+    bib_master_list, images_master_list, guide_pages, transcript_counter, \
+    caption_counter, duplicate_counter, alt_captions_counter, no_caption_counter = create_master_list(pages_list)  # Save the master lists to variables
+
+    print_results(pages_list, images_master_list, transcript_counter, caption_counter, duplicate_counter, bib_master_list, alt_captions_counter, no_caption_counter)
+    write_result_files(bib_master_list, images_master_list, guide_pages)
+
+    for image in images_master_list.keys():
+        captions = images_master_list[image].alt_captions
+        captions.append(images_master_list[image].caption)
+
     # phpmyadmin_images = extract_csv_information("image_list_with_captions-j45ab3_posts.csv")
     # hdd_images = dir_dive()
-    with open("Bibliographies_list", "w") as bib_file:
-        info_to_write = ""
-        for bib in bib_master_list:
-            for attr in bib.keys():
-                info_to_write += f"{attr}: {bib[attr]}\n"
-            info_to_write += "\n\n"
-        bib_file.write(info_to_write)
-    with open("images_list", "w") as img_file:
-        info_to_write = ""
-        for img in images_master_list.keys():
-            info_to_write += f"File name: {images_master_list[img].file_name}\n"\
-                             f"Caption: {images_master_list[img].caption}\n"\
-                             f"Resized resolution: {images_master_list[img].image_resized_resolution[0]}x{images_master_list[img].image_resized_resolution[1]}\n" \
-                             f"Transcription: {images_master_list[img].transcription}\n"\
-                             f"Upload date: {images_master_list[img].upload_date}\n\n\n"
-            img_file.write(info_to_write)
     # compare_scraped_and_phpmyadmin_images(phpmyadmin_images, images_master_list)
     run_time()
 
