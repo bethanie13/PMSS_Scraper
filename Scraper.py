@@ -3,18 +3,24 @@ from PMSS_Image import PMSS_Image
 from Caption import Caption
 import copy
 import csv
+import os.path
 from os import listdir
 from os.path import isfile, join
 from Page import Page
 import numpy as np
 import requests
 import os
+from os import path
 import sys
 from PIL import Image, ExifTags
 from PIL.TiffTags import TAGS
 import time
 import bs4
 from Post import Post
+import urllib.request
+from io import BytesIO
+from io import open as iopen
+
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
     # Code adapted from Francisco Javier Carrera Arias from
@@ -156,9 +162,10 @@ def web(links_visited, web_url, pages_list):
     :param web_url: The Urls that will be visited
     :return: None
     """
-    urls_to_skip = ["https://pmss.wpengine.com/?page_id=3060", "https://pmss.wpengine.com/?page_id=19612",
+    urls_to_skip = ["https://pmss.wpengine.com/?page_id=19612",
                     "https://pmss.wpengine.com/?page_id=48056", "https://pmss.wpengine.com/?attachment_id=3868",
                     "https://pmss.wpengine.com/farm/farm-shell-farm-field-plan-1948/"]
+    # "https://pmss.wpengine.com/?page_id=3060"
     split_link = web_url.split(".")  # splits the link on a period to get domain
     if len(split_link) > 1:  # base case to ensure that there is a link
         domain = split_link[0] + split_link[1]  # stores the domain
@@ -241,6 +248,9 @@ def image_info(page_soup):
     :return: A dictionary containing all of the images from the page
     """
     images_dict = {}            # create a dictionary for the images
+    image_path_hdd = "/Volumes/Elements/Scraped_Images/"
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
+          (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
     for image in page_soup.find_all('img'):  # for an image it will find all of the img tags within the html of the page
         if image.get("src"):                 # if our image has a src attribute
             temp = PMSS_Image()              # initialize a new image instance
@@ -256,6 +266,26 @@ def image_info(page_soup):
 
             # If resolution information is in the filename, strip that information out
             temp.strip_resolution()
+
+            os.chdir(image_path_hdd)
+            upload_date = temp.upload_date.split("/")
+            for partial_date in upload_date:
+
+                try:  # try to go into the csv directory
+                    os.chdir(partial_date)
+                except FileNotFoundError:
+                    os.mkdir(partial_date)
+                    os.chdir(partial_date)
+            # request = urllib.request.Request(image.get("src"), headers=headers)
+            # request.add_header(headers)
+            # request.urlopen(os.getcwd() + temp.file_name)
+            file_path = os.getcwd() + "/" + temp.file_name
+            if not path.exists(file_path):
+                if "C:/" not in image.get("src"):
+                    response = requests.get(image.get("src"), headers=headers)
+                    if response.status_code != 404:
+                        with iopen(file_path, "wb") as image_file:
+                            image_file.write(response.content)
 
             if image.parent.name == "figure":       # If we are looking at an image from a figure tag
                 for tag in image.parent.children:   # for each of the tag's siblings
@@ -294,7 +324,7 @@ def image_file_path_info(tag, img):
     img.file_name = file_split[-1]        # retrieves the file name once the file has been split
     year = file_split[-3]                 # retrieves the year the image was uploaded from the file name
     month = file_split[-2]                # retrieves the month the image was uploaded from the file name
-    img.upload_date = month + "/" + year  # uploads the date of the image based on month and year
+    img.upload_date = year + "/" + month # uploads the date of the image based on month and year
 
 
 def image_resolution(tag, img):
@@ -700,7 +730,7 @@ def create_master_list(pages_list):
            caption_counter, duplicate_counter, alt_captions_counter, no_caption_counter   # return all 3 structures
 
 
-def write_csv(page_list):
+def write_csv(images: dict, bibliographies: list):
     """
     Uses the csv library to write .csv files containing the image's information
     :param page_list: A list of pages that will have their contents output
@@ -714,20 +744,34 @@ def write_csv(page_list):
         os.mkdir(csv_path)  # make the csv directory
         os.chdir(csv_path)  # change to the csv directory
     if to_csv.lower() == "y":  # if the user responded yes
-        for page in page_list:  # for each page in our list of page objects
-            write_page = input(f"Do you want to output {page.url}? (y/n): ")  # Ask the user if they want to output the page
-            if write_page.lower() == "y":  # if the user said yes to output the page
-                ext_len = len(page.url.split(".")[-1])  # get the length of the extension
-                csv_name = page.url[:-ext_len - 1] + ".csv"  # remove the current extension and add .csv to the end
+        with open("Images.csv", 'w') as csvfile:  # open csv file for the page we are currently on
+            file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
+            csv_data = [["Filename", "Caption", "Transcription", "Upload Date"]]  # the first row are the column headings
+            for image in images.keys():  # for each image in our images dictionary
+                csv_data.append([images[image].file_name, images[image].caption, "\"" + images[image].transcription + "\"",
+                                 images[image].upload_date])  # append the file name, transcription, and upload date
+            file_writer.writerows(csv_data)  # write the information to the file
+            csvfile.close()  # close the file
 
-                with open(csv_name, 'w') as csvfile:  # open csv file for the page we are currently on
-                    file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
-                    csv_data = [["Filename", "Transcription", "Upload Date"]]  # the first row are the column headings
-                    for image in page.images.keys():  # for each image in our images dictionary
-                        csv_data.append([page.images[image].file_name, "\"" + page.images[image].transcription + "\"",
-                                         page.images[image].upload_date])  # append the file name, transcription, and upload date
-                    file_writer.writerows(csv_data)  # write the information to the file
-                    csvfile.close()  # close the file
+        with open("Biblographies.csv", 'w') as csvfile:  # open csv file for the page we are currently on
+            bib_file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
+            headers = ["Title", "Alt. Title", "Identifier", "Creator", "Alt. Creator", "Alt. Creators",
+                       "Subject Keyword", "Subject LCSH", "Date digital", "Date original", "Date",
+                       "Publisher", "Contributor", "Type", "Format", "Source", "Language", "Relation",
+                       "Coverage Temporal", "Coverage Spatial", "Rights", "Donor", "Description",
+                       "Acquisition", "Citation", "Processed by", "Last updated", "Bibliography"]  # the first row are the column headings
+            csv_data = [headers]
+            for bib in bibliographies:  # for each image in our images dictionary
+                current_bib = []
+                current_keys = bib.keys()
+                for header in headers:
+                    if header in current_keys:
+                        current_bib.append(bib[header])
+                    else:
+                        current_bib.append("")
+                csv_data.append(current_bib)  # append the file name, transcription, and upload date
+            bib_file_writer.writerows(csv_data)  # write the information to the file
+            csvfile.close()  # close the file
 
 
 def compare_scraped_and_phpmyadmin_images(list_of_posts: list, image_dictionary: dict):
@@ -791,6 +835,7 @@ def run_time():
     time_run = time.time() - start_time
     mins = time_run // 60
     secs = time_run - (60 * mins)
+    mins = str(mins).split(".")[0]
     print(f"~~----{mins}m {secs}s run time----~~")
 
 
@@ -800,17 +845,19 @@ def main():
     # file = "GUIDE to BOOK and PERIODICAL Collections - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"  # TODO: put filename here
     # f = open(path + file)
     # pmss_pages = pages_info(f, file)
-    #  write_csv(pmss_pages)
+
     pages_list = []
     links_visited = []  # list of links visited
     web(links_visited, 'https://pmss.wpengine.com/', pages_list)
     print("~~----Scraping Results----~~")
     bib_master_list, images_master_list, guide_pages, transcript_counter, \
-    caption_counter, duplicate_counter, alt_captions_counter, no_caption_counter = create_master_list(pages_list)  # Save the master lists to variables
+        caption_counter, duplicate_counter, alt_captions_counter, no_caption_counter = create_master_list(pages_list)  # Save the master lists to variables
 
-    print_results(pages_list, images_master_list, transcript_counter, caption_counter, duplicate_counter, bib_master_list, alt_captions_counter, no_caption_counter)
+    print_results(pages_list, images_master_list, transcript_counter, caption_counter, duplicate_counter,
+                  bib_master_list, alt_captions_counter, no_caption_counter)
     write_result_files(bib_master_list, images_master_list, guide_pages)
 
+    write_csv(images_master_list, bib_master_list)
     for image in images_master_list.keys():
         captions = images_master_list[image].alt_captions
         captions.append(images_master_list[image].caption)
