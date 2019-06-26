@@ -5,8 +5,10 @@ class PMSS_Image:
         self.transcription = ""
         self.upload_date = ""
         self.caption = ""
+        self.url_sources = ""
         self.alt_captions = []
         self.image_resized_resolution = [0, 0]
+        self.tags = []
 
     def __str__(self):
         """
@@ -14,7 +16,8 @@ class PMSS_Image:
         :return: a string containing all of the class's variables
         """
         return f"File name: {self.file_name}\nCaption: {self.caption}\nResized resolution: {self.image_resized_resolution[0]}x{self.image_resized_resolution[1]}" \
-               f"\nTranscription: {self.transcription}\nUpload date: {self.upload_date}\n\n"
+               f"\nTranscription: {self.transcription}\nUpload date: {self.upload_date}\n" \
+               f"Tags: {self.tags}\n\n"
 
     def strip_resolution(self):
         """
