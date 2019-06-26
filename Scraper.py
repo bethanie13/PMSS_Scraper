@@ -96,7 +96,7 @@ def dir_dive():
 def extract_image_info():
     """
     WIP
-    :return:
+    :return: None
     """
     img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_PHOTOS/DSCF0014.jpg")
     exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
@@ -119,7 +119,7 @@ def compare_page_to_hdd(pages, tif_list):
     WIP
     :param pages:
     :param tif_list:
-    :return:
+    :return: None
     """
     for page in pages:
         for image in page.images.keys():
@@ -130,7 +130,7 @@ def compare_page_to_hdd(pages, tif_list):
 
 
 def extract_csv_information(filename):
-    csv_info_list = []
+    csv_info_list = []   # creates a list
     with open(filename) as file:
         info = file.read()
         info = info.split("\n")
@@ -157,7 +157,7 @@ def extract_csv_information(filename):
 
 def web(links_visited, web_url, pages_list):
     """
-    Web Crawler that will scan through the pmss webepage and find all different links from various pages
+    Web Crawler that will scan through the pmss webpage and find all different links from various pages
     :param links_visited: List that will store all of the links visited through the crawler
     :param web_url: The Urls that will be visited
     :return: None
@@ -177,8 +177,8 @@ def web(links_visited, web_url, pages_list):
     if web_url in links_visited or web_url in urls_to_skip:  # base case if we have already visited the link we do not want to re-visit it over
         return
     # TODO: If you want to change the number of pages to crawl through, change the number below
-    # if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
-    #     return
+    if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
+        return
     if web_url.split(".")[-1] in ext:  # split url if the end of url is in ext just return
         return
     links_visited.append(web_url)  # append the urls that we visit to a list of links visited
@@ -192,8 +192,8 @@ def web(links_visited, web_url, pages_list):
     page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
     for link in page_soup.findAll('a'):  # finds all a tags within html
         if not link.get("class"):  # avoid the html tag with class
-            # if len(links_visited) > 500:
-            #     return
+            if len(links_visited) > 500:
+                return
             if link.contents:  # checks to make sure there are contents before we get the name
                 if link.contents[0].name != "img":  # if the link is not for an image
                     if link.parent:  # if the link has a parent tag
@@ -249,8 +249,7 @@ def image_info(page_soup):
     """
     images_dict = {}            # create a dictionary for the images
     image_path_hdd = "/Volumes/Elements/Scraped_Images/"
-    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
-          (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
+    page_tags = image_tags(page_soup)
     for image in page_soup.find_all('img'):  # for an image it will find all of the img tags within the html of the page
         if image.get("src"):                 # if our image has a src attribute
             temp = PMSS_Image()              # initialize a new image instance
@@ -267,32 +266,32 @@ def image_info(page_soup):
             # If resolution information is in the filename, strip that information out
             temp.strip_resolution()
 
-            os.chdir(image_path_hdd)
-            upload_date = temp.upload_date.split("/")
-            for partial_date in upload_date:
+            temp.tags = page_tags
 
-                try:  # try to go into the csv directory
-                    os.chdir(partial_date)
-                except FileNotFoundError:
-                    os.mkdir(partial_date)
-                    os.chdir(partial_date)
-            # request = urllib.request.Request(image.get("src"), headers=headers)
-            # request.add_header(headers)
-            # request.urlopen(os.getcwd() + temp.file_name)
-            file_path = os.getcwd() + "/" + temp.file_name
-            if not path.exists(file_path):
-                if "C:/" not in image.get("src"):
-                    response = requests.get(image.get("src"), headers=headers)
-                    if response.status_code != 404:
-                        with iopen(file_path, "wb") as image_file:
-                            image_file.write(response.content)
+            # os.chdir(image_path_hdd)
+
+            upload_date = temp.upload_date.split("/")
+            # for partial_date in upload_date:
+            #     try:  # try to go into the csv directory
+            #         os.chdir(partial_date)
+            #     except FileNotFoundError:
+            #         os.mkdir(partial_date)
+            #         os.chdir(partial_date)
+            # file_path = os.getcwd() + "/" + temp.file_name
+            # if not path.exists(file_path):
+            #     if "C:/" not in image.get("src"):
+            #         response = requests.get(image.get("src"), headers=headers)
+            #         if response.status_code != 404:
+            #             with iopen(file_path, "wb") as image_file:
+            #                 image_file.write(response.content)
 
             if image.parent.name == "figure":       # If we are looking at an image from a figure tag
                 for tag in image.parent.children:   # for each of the tag's siblings
                     if tag.name == "figcaption":    # if a sibling's tag namme is figcaption
                         temp.caption = tag.string   # save the text as it is the caption for our image
-
-            if temp.file_name != "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg":  # Ignore the header image
+            file_names_skip = ["220px-Norman_Thomas_1937.jpg", "12px-Wikisource-logo.svg.png", "Emma_Lucy_Braun.jpg",    # ignore these files because they're irrelevant to scraping
+                               "04025r.jpg", "apf1-00354r.jpg", "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg"]
+            if temp.file_name not in file_names_skip:  # Ignore the header image
                 # Copy the image to a dictionary
                 images_dict[temp.file_name[:-len(temp.file_name.split(".")[-1]) - 1].lower()] = copy.copy(temp)
     return images_dict
@@ -374,6 +373,40 @@ def image_caption_linking(captions_dict, images_dict):
                     if captions_dict[caption].image_link == images_dict[
                             image].caption_link:  # if the caption dictionary matches the image dictionary
                         images_dict[image].caption = captions_dict[caption].caption  # then the image will go with the caption
+
+
+def image_tags(page_soup):
+    all_p = page_soup.find_all("p")
+    tags = []
+    for tag in all_p:
+        if tag.string:
+            if "TAGS:" in tag.string:
+                tag_body = tag.string.split("TAGS:")
+                for descr_tag in tag_body[1].split(";"):
+                    if descr_tag:
+                        cleaned_tag = descr_tag.replace(u'\xa0', u' ')
+                        if cleaned_tag != " ":
+                            if cleaned_tag[0] == " ":
+                                cleaned_tag = cleaned_tag[1:]
+                            if cleaned_tag[-1] == " ":
+                                cleaned_tag = cleaned_tag[:-2]
+                            tags.append(cleaned_tag)
+        else:
+            for child in tag.children:
+                if child.string:
+
+                    if "TAGS:" in child.string:
+                        tag_body = child.next_sibling.string
+                        for descr_tag in tag_body.split(";"):
+                            if descr_tag:
+                                cleaned_tag = descr_tag.replace(u'\xa0', u' ')
+                                if cleaned_tag != " ":
+                                    if cleaned_tag[0] == " ":
+                                        cleaned_tag = cleaned_tag[1:]
+                                    if cleaned_tag[-1] == " ":
+                                        cleaned_tag = cleaned_tag[:-2]
+                                    tags.append(cleaned_tag)
+    return tags
 
 
 def find_transcriptions(page_soup, img_dict):
@@ -712,9 +745,12 @@ def create_master_list(pages_list):
                                     alt_captions_counter += 1
                         else:
                             list_of_images[image].caption = page.images[image].caption
+                        list_of_images[image].url_sources += page.url + " "
 
             except KeyError:
                 list_of_images[image] = page.images[image]    # if image is not in the dictionary add it to it
+                list_of_images[image].url_sources += page.url + " "
+
             if list_of_images[image].transcription:
                 transcript_counter += 1
             if page.images[image].caption:
@@ -723,6 +759,7 @@ def create_master_list(pages_list):
             list_of_bibs.append(page.bibliography)            # append bibliography to the list of bibliographies
         if page.is_guide:                                     # if this is a GUIDE page
             guide_pages.append(page.url)                     # append the URL to the list of GUIDE URLs
+
     for image in list_of_images.keys():
         if not list_of_images[image].caption:
             no_caption_counter += 1
@@ -737,7 +774,7 @@ def write_csv(images: dict, bibliographies: list):
     :return:
     """
     to_csv = input("Do you want to create csv files? (y/n): ")  # input check for if the user wants to output csv files
-    csv_path = os.getcwd() + "/csv/"  # using the os module, the current directory plus /csv/ is where they will be stored
+    csv_path = "/Users/bereacollege/Desktop/PMSS_Scraper/csv/"  # using the os module, the current directory plus /csv/ is where they will be stored
     try:  # try to go into the csv directory
         os.chdir(csv_path)
     except FileNotFoundError:  # if the csv directory doesnt exist
@@ -746,10 +783,10 @@ def write_csv(images: dict, bibliographies: list):
     if to_csv.lower() == "y":  # if the user responded yes
         with open("Images.csv", 'w') as csvfile:  # open csv file for the page we are currently on
             file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
-            csv_data = [["Filename", "Caption", "Transcription", "Upload Date"]]  # the first row are the column headings
+            csv_data = [["Filename", "Caption", "Transcription", "Upload Date", "URL Sources"]]  # the first row are the column headings
             for image in images.keys():  # for each image in our images dictionary
                 csv_data.append([images[image].file_name, images[image].caption, "\"" + images[image].transcription + "\"",
-                                 images[image].upload_date])  # append the file name, transcription, and upload date
+                                 images[image].upload_date, images[image].url_sources])  # append the file name, transcription, and upload date
             file_writer.writerows(csv_data)  # write the information to the file
             csvfile.close()  # close the file
 
@@ -783,10 +820,7 @@ def compare_scraped_and_phpmyadmin_images(list_of_posts: list, image_dictionary:
             if post.meta_value == image_dictionary[scraped_img].file_name:
                 print(f"{post.meta_value}: True")
                 image_matches += 1
-            # else:
-            #     if levenshtein_ratio_and_distance(web_img.meta_value, images_master_list[scraped_img].file_name, True) >= .80:
-            #         print(f"{web_img.meta_value}: True")
-            #         image_matches += 1
+
     print(f"{image_matches}/{len(list_of_posts)} images matched")
 
 
