@@ -8,7 +8,7 @@ class PMSS_Image:
         self.url_sources = ""
         self.alt_captions = []
         self.image_resized_resolution = [0, 0]
-        self.tags = []
+        self.tags = ""
 
     def __str__(self):
         """

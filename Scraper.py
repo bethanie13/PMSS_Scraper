@@ -17,7 +17,6 @@ from PIL.TiffTags import TAGS
 import time
 import bs4
 from Post import Post
-import urllib.request
 from io import BytesIO
 from io import open as iopen
 
@@ -229,9 +228,9 @@ def pages_info(text, url):
     image_caption_linking(captions, current_page.images)
     # TODO: The following 3 lines are for getting bibliographies
     current_page.bibliography, partial_bib = bibliography_pairings(web_page)   # check for bibliographies on the page
-    if partial_bib:                               # if there exists a partial bibliography
-        current_page.partial_bibliography = True  # marks current page as having a bibliography
-        print(f"Partial bibliography was found at: {url}")   # prints a message that the url has a partial bibliography
+    # if partial_bib:                               # if there exists a partial bibliography
+    #     current_page.partial_bibliography = True  # marks current page as having a bibliography
+    #     print(f"Partial bibliography was found at: {url}")   # prints a message that the url has a partial bibliography
     current_page.url = url                        # save the current url with in the page's attributes
     # check_if_guide(web_page, current_page)
     # TODO: This is for getting transcriptions
@@ -247,6 +246,8 @@ def image_info(page_soup):
     :param page_soup: A Beautiful Soup object
     :return: A dictionary containing all of the images from the page
     """
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
+          (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
     images_dict = {}            # create a dictionary for the images
     image_path_hdd = "/Volumes/Elements/Scraped_Images/"
     page_tags = image_tags(page_soup)
@@ -254,6 +255,7 @@ def image_info(page_soup):
         if image.get("src"):                 # if our image has a src attribute
             temp = PMSS_Image()              # initialize a new image instance
 
+            src = image.get("src")
             # Pull out the id that will be used to find this image's caption
             caption_link(image, temp)
 
@@ -268,22 +270,7 @@ def image_info(page_soup):
 
             temp.tags = page_tags
 
-            # os.chdir(image_path_hdd)
-
-            upload_date = temp.upload_date.split("/")
-            # for partial_date in upload_date:
-            #     try:  # try to go into the csv directory
-            #         os.chdir(partial_date)
-            #     except FileNotFoundError:
-            #         os.mkdir(partial_date)
-            #         os.chdir(partial_date)
-            # file_path = os.getcwd() + "/" + temp.file_name
-            # if not path.exists(file_path):
-            #     if "C:/" not in image.get("src"):
-            #         response = requests.get(image.get("src"), headers=headers)
-            #         if response.status_code != 404:
-            #             with iopen(file_path, "wb") as image_file:
-            #                 image_file.write(response.content)
+            download_image(temp, src)
 
             if image.parent.name == "figure":       # If we are looking at an image from a figure tag
                 for tag in image.parent.children:   # for each of the tag's siblings
@@ -295,6 +282,28 @@ def image_info(page_soup):
                 # Copy the image to a dictionary
                 images_dict[temp.file_name[:-len(temp.file_name.split(".")[-1]) - 1].lower()] = copy.copy(temp)
     return images_dict
+
+
+def download_image(image, src):
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
+          (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
+    hdd_image_path = "/Volumes/Elements/Scraped_Images/"
+    os.chdir(hdd_image_path)
+    upload_date = image.upload_date.split("/")
+
+    for partial_date in upload_date:
+        try:  # try to go into the csv directory
+            os.chdir(partial_date)
+        except FileNotFoundError:
+            os.mkdir(partial_date)
+            os.chdir(partial_date)
+    file_path = os.getcwd() + "/" + image.file_name
+    if not path.exists(file_path):
+        if "C:/" not in src:
+            response = requests.get(src, headers=headers)
+            if response.status_code != 404:
+                with iopen(file_path, "wb") as image_file:
+                    image_file.write(response.content)
 
 
 def caption_link(tag, img):
@@ -323,7 +332,7 @@ def image_file_path_info(tag, img):
     img.file_name = file_split[-1]        # retrieves the file name once the file has been split
     year = file_split[-3]                 # retrieves the year the image was uploaded from the file name
     month = file_split[-2]                # retrieves the month the image was uploaded from the file name
-    img.upload_date = year + "/" + month # uploads the date of the image based on month and year
+    img.upload_date = year + "/" + month  # uploads the date of the image based on month and year
 
 
 def image_resolution(tag, img):
@@ -377,7 +386,7 @@ def image_caption_linking(captions_dict, images_dict):
 
 def image_tags(page_soup):
     all_p = page_soup.find_all("p")
-    tags = []
+    tags = ""
     for tag in all_p:
         if tag.string:
             if "TAGS:" in tag.string:
@@ -385,12 +394,12 @@ def image_tags(page_soup):
                 for descr_tag in tag_body[1].split(";"):
                     if descr_tag:
                         cleaned_tag = descr_tag.replace(u'\xa0', u' ')
-                        if cleaned_tag != " ":
-                            if cleaned_tag[0] == " ":
+                        if len(cleaned_tag) > 2:
+                            while cleaned_tag[0] == " ":
                                 cleaned_tag = cleaned_tag[1:]
-                            if cleaned_tag[-1] == " ":
-                                cleaned_tag = cleaned_tag[:-2]
-                            tags.append(cleaned_tag)
+                            while cleaned_tag[-1] == " ":
+                                cleaned_tag = cleaned_tag[:-1]
+                            tags += "\"" + cleaned_tag + "\" "
         else:
             for child in tag.children:
                 if child.string:
@@ -400,12 +409,12 @@ def image_tags(page_soup):
                         for descr_tag in tag_body.split(";"):
                             if descr_tag:
                                 cleaned_tag = descr_tag.replace(u'\xa0', u' ')
-                                if cleaned_tag != " ":
-                                    if cleaned_tag[0] == " ":
+                                if len(cleaned_tag) > 2:
+                                    while cleaned_tag[0] == " ":
                                         cleaned_tag = cleaned_tag[1:]
-                                    if cleaned_tag[-1] == " ":
-                                        cleaned_tag = cleaned_tag[:-2]
-                                    tags.append(cleaned_tag)
+                                    while cleaned_tag[-1] == " ":
+                                        cleaned_tag = cleaned_tag[:-1]
+                                    tags += "\"" + cleaned_tag + "\" "
     return tags
 
 
@@ -580,13 +589,13 @@ def bibliography_pairings(page_soup):
     count_data = 0   # used to store data in twos (count data will increment to 2 and then reset to 0 when data is saved
     bibliography_dict = {}       # dictionary that will store all of the bibliographies
     # list of all possible row titles lowered to use as a reference for comparing information
-    table_row_titles_lower = ["title", "alt. title", "identifier", "creator", "alt. creator", "alt. creators", "subject keyword",
+    table_row_titles_lower = ["title", "alt. title", "identifier", "creator", "alt. creator", "subject keyword",
                               "subject lcsh", "date digital", "date original", "date",
                               "publisher", "contributor", "type", "format", "source", "language", "relation",
                               "coverage temporal", "coverage spatial", "rights", "donor", "description", "acquisition",
                               "citation", "processed by", "last updated", "bibliography"]
     # list of all possible row titles for storing information
-    table_row_titles = ["Title", "Alt. Title", "Identifier", "Creator", "Alt. Creator", "Alt. Creators", "Subject Keyword",
+    table_row_titles = ["Title", "Alt. Title", "Identifier", "Creator", "Alt. Creator", "Subject Keyword",
                         "Subject LCSH", "Date digital", "Date original", "Date",
                         "Publisher", "Contributor", "Type", "Format", "Source", "Language", "Relation",
                         "Coverage Temporal", "Coverage Spatial", "Rights", "Donor", "Description", "Acquisition",
@@ -687,7 +696,7 @@ def bibliography_text_retrieval(tag, column_list):
             column_list.append(text)                         # if it is append text to the column list
         return
     for child in tag.children:                               # for each of the current tag's children
-        bibliography_text_retrieval(child, column_list)      # recursive function call to build the transcript
+        bibliography_text_retrieval(child, column_list)      # recursive function call to build the bibliography
     return                                                   # return the full text
 
 
@@ -773,6 +782,11 @@ def write_csv(images: dict, bibliographies: list):
     :param page_list: A list of pages that will have their contents output
     :return:
     """
+    contentdm_columns = ["Title", "Alt. Title", "Identifier", "Creator", "Subject Keywords", "Subject", "Date",
+                         "Date Digitized", "Date Uploaded", "Date Accepted", "Publisher", "Contributors", "Type",
+                         "Format", "Source", "Language", "Relation", "Coverage Spatial", "Coverage Temporal",
+                         "Rights", "Audience", "Description", "Transcript", "Originating Institution"]
+
     to_csv = input("Do you want to create csv files? (y/n): ")  # input check for if the user wants to output csv files
     csv_path = "/Users/bereacollege/Desktop/PMSS_Scraper/csv/"  # using the os module, the current directory plus /csv/ is where they will be stored
     try:  # try to go into the csv directory
@@ -781,23 +795,24 @@ def write_csv(images: dict, bibliographies: list):
         os.mkdir(csv_path)  # make the csv directory
         os.chdir(csv_path)  # change to the csv directory
     if to_csv.lower() == "y":  # if the user responded yes
-        with open("Images.csv", 'w') as csvfile:  # open csv file for the page we are currently on
+        with open("Images_for_contentdm.csv", 'w') as csvfile:  # open csv file for the page we are currently on
             file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
-            csv_data = [["Filename", "Caption", "Transcription", "Upload Date", "URL Sources"]]  # the first row are the column headings
+            csv_data = [contentdm_columns]  # the first row are the column headings
             for image in images.keys():  # for each image in our images dictionary
-                csv_data.append([images[image].file_name, images[image].caption, "\"" + images[image].transcription + "\"",
-                                 images[image].upload_date, images[image].url_sources])  # append the file name, transcription, and upload date
+                csv_data.append([images[image].file_name, "", "", "", images[image].tags, "", "",
+                 "", images[image].upload_date, "", "", "", "",
+                 "", "", "", "", "", "",
+                 "", "", images[image].caption, images[image].transcription, ""]) # append the file name, transcription, and upload date
             file_writer.writerows(csv_data)  # write the information to the file
             csvfile.close()  # close the file
 
-        with open("Biblographies.csv", 'w') as csvfile:  # open csv file for the page we are currently on
+        with open("Bibliographies_for_contentdm.csv", 'w') as csvfile:  # open csv file for the page we are currently on
             bib_file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
-            headers = ["Title", "Alt. Title", "Identifier", "Creator", "Alt. Creator", "Alt. Creators",
-                       "Subject Keyword", "Subject LCSH", "Date digital", "Date original", "Date",
+            csv_data = [contentdm_columns]
+            headers = ["Title", "Alt. Title", "Identifier", "Alt. Creator",
+                       "Subject Keyword", "Subject LCSH", "Date", "Date digital", "", "Acquisition",
                        "Publisher", "Contributor", "Type", "Format", "Source", "Language", "Relation",
-                       "Coverage Temporal", "Coverage Spatial", "Rights", "Donor", "Description",
-                       "Acquisition", "Citation", "Processed by", "Last updated", "Bibliography"]  # the first row are the column headings
-            csv_data = [headers]
+                       "Coverage Spatial", "Coverage Temporal", "Rights", "", "Description", "Creator"]  # the first row are the column headings
             for bib in bibliographies:  # for each image in our images dictionary
                 current_bib = []
                 current_keys = bib.keys()
