@@ -4,22 +4,16 @@ from Caption import Caption
 import copy
 import csv
 import os.path
-from os import listdir
-from os.path import isfile, join
 from Page import Page
 import numpy as np
 import requests
 import os
 from os import path
-import sys
-from PIL import Image, ExifTags
-from PIL.TiffTags import TAGS
 import time
 import bs4
 from Post import Post
-from io import BytesIO
 from io import open as iopen
-
+import string
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
     # Code adapted from Francisco Javier Carrera Arias from
@@ -79,56 +73,61 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
 def dir_dive():
     """
     A function to find all the names of .tif's and .jpg's
-    :return: A list of names of files
+    :return: A dictionary of names of files
     """
-    os.chdir("/Volumes/Elements/PMSS_ARCHIVE")
-    tifs = {}
-    for root, dirs, files in os.walk(".", topdown=False):
+    os.chdir("/Volumes/Elements/PMSS_ARCHIVE")  # looks at this specific directory
+    tifs = {}                                 # dictionary to store all of the tif images
+    for root, dirs, files in os.walk(".", topdown=False):  # finds all files within the directory and within all sub-directories
         for name in files:
-            temp = PMSS_Image()
-            if name[-4:] == ".tif" or name[-4:] == ".jpg":
-                temp.file_name = name
-                tifs[name[:-4]] = temp
-    return tifs
+            original = name                      # original file name that includes .tif
+            if name[-4:] == ".tif":               # if the extension is tif
+                for punct in string.punctuation:   # for every punctuation
+                    name = name.replace(punct, "")    # removes all instances of a specific punctuation
+                name = name.replace(" ", "")
+                tifs[name] = original      # stores the file name with punctuation removed as the key in the dictionary with the original file name as the value
+    return tifs                                 # returns the dictionary with all tifs
 
 
-def extract_image_info():
+def file_split_website(list_of_images):
     """
-    WIP
-    :return: None
+    A function that will remove punctuation from all of the file names of images that are on the website.
+    :param list_of_images: A list of images from website
+    :return: A dictionary of file names
     """
-    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_PHOTOS/DSCF0014.jpg")
-    exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
-    print(exif)
-    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_13_education/education_series_13/jpg_educat_series_13/1940s_unknown_ed_obligation_015.jpg")
-    exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
-    print(exif)
-    img = Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_05_governance/BOARD_REPORTS/1937-38_annual_board_report/jpg_1937_38_annual_board/1937-38_boar002.jpg")
-    if img._getexif():
-        exif = {ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS}
-        print(exif)
-
-    with Image.open("/Volumes/Elements/PMSS_ARCHIVE/series_13_education/little_school/little_school_001.tif") as img:
-        meta_dict = {TAGS[key]: img.tag[key] for key in img.tag.keys()}
-        print(meta_dict)
+    file_list = {}  # dictionary to store all file names from the web site
+    for image in list_of_images:   # for each image in the list of images
+        name_to_fix = list_of_images[image].file_name  # store the original file name to be put in the dictionary
+        for punct in string.punctuation:               # for every punctuation
+            name_to_fix = name_to_fix.replace(punct, "")  # removes all instances of a specific punctuation
+        file_list[name_to_fix] = image # stores the file name with punctuation removed as the key in the dictionary with the original file name as the value
+    return file_list  # returns the dictionary with all the files
 
 
-def compare_page_to_hdd(pages, tif_list):
+def compare_page_to_hdd(web_images, hdd_images):
     """
-    WIP
-    :param pages:
-    :param tif_list:
-    :return: None
+    A fucnction that will compare the file names of the web site to the file names of the hard drive.
+    :param web_images: Images from the web site
+    :param hdd_images: Images from the hard drive
+    :return: Dictionary of all images that have matched with each other
     """
-    for page in pages:
-        for image in page.images.keys():
-            if image in tif_list:
-                print("{} from {}: True".format(image, page.url))
-            else:
-                print("{} from {}: False".format(image, page.url))
+    match_count = 0
+    matched_items = {}   # Dictionary of all images that have matched with each other
+    for image in web_images:   # for each image in the dictionary of web images
+        for source in hdd_images:  # for each image in the hard drive
+            if image[:-3] == source[:-3]:   # removes extensions like tif or jpg and then compares the two file names
+                if source[-3:] == "tif":    # if the extension is tif
+                    matched_items[image] = source  # store the file name from web site as the key and the hard drive file name as the value
+                    match_count += 1
+    print(f"{match_count} pictures were replaced with their \"tif\" counterpart")
+    return matched_items   # return dict with matched file names
 
 
 def extract_csv_information(filename):
+    """
+
+    :param filename:
+    :return:
+    """
     csv_info_list = []   # creates a list
     with open(filename) as file:
         info = file.read()
@@ -164,7 +163,6 @@ def web(links_visited, web_url, pages_list):
     urls_to_skip = ["https://pmss.wpengine.com/?page_id=19612",
                     "https://pmss.wpengine.com/?page_id=48056", "https://pmss.wpengine.com/?attachment_id=3868",
                     "https://pmss.wpengine.com/farm/farm-shell-farm-field-plan-1948/"]
-    # "https://pmss.wpengine.com/?page_id=3060"
     split_link = web_url.split(".")  # splits the link on a period to get domain
     if len(split_link) > 1:  # base case to ensure that there is a link
         domain = split_link[0] + split_link[1]  # stores the domain
@@ -176,8 +174,8 @@ def web(links_visited, web_url, pages_list):
     if web_url in links_visited or web_url in urls_to_skip:  # base case if we have already visited the link we do not want to re-visit it over
         return
     # TODO: If you want to change the number of pages to crawl through, change the number below
-    if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
-        return
+    # if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
+    #     return
     if web_url.split(".")[-1] in ext:  # split url if the end of url is in ext just return
         return
     links_visited.append(web_url)  # append the urls that we visit to a list of links visited
@@ -191,8 +189,8 @@ def web(links_visited, web_url, pages_list):
     page_soup = BeautifulSoup(plain, "html.parser")  # beautiful soup object; parses the html
     for link in page_soup.findAll('a'):  # finds all a tags within html
         if not link.get("class"):  # avoid the html tag with class
-            if len(links_visited) > 500:
-                return
+            # if len(links_visited) > 500:
+            #     return
             if link.contents:  # checks to make sure there are contents before we get the name
                 if link.contents[0].name != "img":  # if the link is not for an image
                     if link.parent:  # if the link has a parent tag
@@ -228,9 +226,6 @@ def pages_info(text, url):
     image_caption_linking(captions, current_page.images)
     # TODO: The following 3 lines are for getting bibliographies
     current_page.bibliography, partial_bib = bibliography_pairings(web_page)   # check for bibliographies on the page
-    # if partial_bib:                               # if there exists a partial bibliography
-    #     current_page.partial_bibliography = True  # marks current page as having a bibliography
-    #     print(f"Partial bibliography was found at: {url}")   # prints a message that the url has a partial bibliography
     current_page.url = url                        # save the current url with in the page's attributes
     # check_if_guide(web_page, current_page)
     # TODO: This is for getting transcriptions
@@ -246,11 +241,8 @@ def image_info(page_soup):
     :param page_soup: A Beautiful Soup object
     :return: A dictionary containing all of the images from the page
     """
-    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
-          (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
     images_dict = {}            # create a dictionary for the images
-    image_path_hdd = "/Volumes/Elements/Scraped_Images/"
-    page_tags = image_tags(page_soup)
+    page_tags = image_tags(page_soup) # gets the tags for the page
     for image in page_soup.find_all('img'):  # for an image it will find all of the img tags within the html of the page
         if image.get("src"):                 # if our image has a src attribute
             temp = PMSS_Image()              # initialize a new image instance
@@ -268,15 +260,17 @@ def image_info(page_soup):
             # If resolution information is in the filename, strip that information out
             temp.strip_resolution()
 
+            # Set the tags for the images as the same tags from the page
             temp.tags = page_tags
 
+            # Attempts to save the image
             download_image(temp, src)
 
             if image.parent.name == "figure":       # If we are looking at an image from a figure tag
                 for tag in image.parent.children:   # for each of the tag's siblings
                     if tag.name == "figcaption":    # if a sibling's tag namme is figcaption
                         temp.caption = tag.string   # save the text as it is the caption for our image
-            file_names_skip = ["220px-Norman_Thomas_1937.jpg", "12px-Wikisource-logo.svg.png", "Emma_Lucy_Braun.jpg",    # ignore these files because they're irrelevant to scraping
+            file_names_skip = ["220px-Norman_Thomas_1937.jpg", "12px-Wikisource-logo.svg.png", "Emma_Lucy_Braun.jpg",  # ignore these files because they're irrelevant to scraping
                                "04025r.jpg", "apf1-00354r.jpg", "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg"]
             if temp.file_name not in file_names_skip:  # Ignore the header image
                 # Copy the image to a dictionary
@@ -285,25 +279,31 @@ def image_info(page_soup):
 
 
 def download_image(image, src):
+    """
+    A function that downloads the images that have not been saved from the web site.
+    :param image: Instance of the PMSS_Image class
+    :param src: The URL from the image that we want to save
+    :return: None
+    """
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
           (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
     hdd_image_path = "/Volumes/Elements/Scraped_Images/"
-    os.chdir(hdd_image_path)
-    upload_date = image.upload_date.split("/")
+    os.chdir(hdd_image_path)    # changes directory to the location that we want to save images
+    upload_date = image.upload_date.split("/")  # gets the upload date to be used in setting the save directory
 
-    for partial_date in upload_date:
-        try:  # try to go into the csv directory
-            os.chdir(partial_date)
-        except FileNotFoundError:
-            os.mkdir(partial_date)
-            os.chdir(partial_date)
-    file_path = os.getcwd() + "/" + image.file_name
-    if not path.exists(file_path):
-        if "C:/" not in src:
-            response = requests.get(src, headers=headers)
-            if response.status_code != 404:
-                with iopen(file_path, "wb") as image_file:
-                    image_file.write(response.content)
+    for partial_date in upload_date:            # for each part fo the date in the upload date
+        try:                                    # try to go into the csv directory
+            os.chdir(partial_date)              # change directory to the partial date
+        except FileNotFoundError:               # if the directory does not exist
+            os.mkdir(partial_date)              # make directory for the partial date
+            os.chdir(partial_date)              # change directory to the newly made directory
+    file_path = os.getcwd() + "/" + image.file_name     # file path is the path to the file that we are potentially going to save
+    if not path.exists(file_path):              # if the file name already exists
+        if "C:/" not in src:                    # if the image URL we want to save is not a hard drive path
+            response = requests.get(src, headers=headers)       # gets the image itself; raw image data
+            if response.status_code != 404:     # if the image exists
+                with iopen(file_path, "wb") as image_file:  # retrieves image from file path
+                    image_file.write(response.content)      # writes the image data in to the file
 
 
 def caption_link(tag, img):
@@ -385,37 +385,42 @@ def image_caption_linking(captions_dict, images_dict):
 
 
 def image_tags(page_soup):
-    all_p = page_soup.find_all("p")
-    tags = ""
-    for tag in all_p:
-        if tag.string:
-            if "TAGS:" in tag.string:
-                tag_body = tag.string.split("TAGS:")
-                for descr_tag in tag_body[1].split(";"):
-                    if descr_tag:
-                        cleaned_tag = descr_tag.replace(u'\xa0', u' ')
-                        if len(cleaned_tag) > 2:
-                            while cleaned_tag[0] == " ":
-                                cleaned_tag = cleaned_tag[1:]
-                            while cleaned_tag[-1] == " ":
-                                cleaned_tag = cleaned_tag[:-1]
-                            tags += "\"" + cleaned_tag + "\" "
+    """
+    A function that gets the tags of a web page.
+    :param page_soup: Beautiful Soup object
+    :return: String of tags
+    """
+    all_p = page_soup.find_all("p")  # finds all p tags on web page
+    tags = ""    # create a string to store all of the tags
+    for tag in all_p:   # for each tag within the p tags
+        if tag.string:  # if the tag has a string
+            if "TAGS:" in tag.string:  # if "TAGS" is in that string
+                tag_body = tag.string.split("TAGS:")  # removes "TAGS" from the string
+                for descr_tag in tag_body[1].split(";"):  # for each descriptive tag
+                    if descr_tag:               # if the descriptive tag is not blank
+                        cleaned_tag = descr_tag.replace(u'\xa0', u' ')  # replace "NBSP" with an actual space
+                        if len(cleaned_tag) > 2:  # if the tag is bigger than 2 characters
+                            while cleaned_tag[0] == " ":  # while the first element is not an actual character
+                                cleaned_tag = cleaned_tag[1:]  # save contents except the first element
+                            while cleaned_tag[-1] == " ":       # while the last element is not an actual character
+                                cleaned_tag = cleaned_tag[:-1]  # save contents except the last element
+                            tags += "\"" + cleaned_tag + "\" "  # concatenate the tag to a string
         else:
-            for child in tag.children:
-                if child.string:
+            for child in tag.children:   # if the tag does not have a string look at the child of the tag
+                if child.string:  # if the child has a string
 
-                    if "TAGS:" in child.string:
-                        tag_body = child.next_sibling.string
-                        for descr_tag in tag_body.split(";"):
-                            if descr_tag:
-                                cleaned_tag = descr_tag.replace(u'\xa0', u' ')
-                                if len(cleaned_tag) > 2:
-                                    while cleaned_tag[0] == " ":
-                                        cleaned_tag = cleaned_tag[1:]
-                                    while cleaned_tag[-1] == " ":
-                                        cleaned_tag = cleaned_tag[:-1]
-                                    tags += "\"" + cleaned_tag + "\" "
-    return tags
+                    if "TAGS:" in child.string:   # if "TAGS" is in that child string
+                        tag_body = child.next_sibling.string  # looks at the siblings of that string
+                        for descr_tag in tag_body.split(";"):  # for each descriptive tag
+                            if descr_tag:  # if the descriptive tag is not blank
+                                cleaned_tag = descr_tag.replace(u'\xa0', u' ')  # replace "NBSP" with an actual space
+                                if len(cleaned_tag) > 2:  # if the tag is bigger than 2 characters
+                                    while cleaned_tag[0] == " ":   # while the first element is not an actual character
+                                        cleaned_tag = cleaned_tag[1:]  # save contents except the first element
+                                    while cleaned_tag[-1] == " ":      # while the first element is not an actual character
+                                        cleaned_tag = cleaned_tag[:-1]  # save contents except the last element
+                                    tags += "\"" + cleaned_tag + "\" "  # concatenate the tag to a string
+    return tags  # return the string that contains all the tags
 
 
 def find_transcriptions(page_soup, img_dict):
@@ -492,10 +497,10 @@ def find_transcriptions(page_soup, img_dict):
                         if recording:
                             split_name = main_tags_child.string.split(
                                 "[")  # if .jpg found then we will then extract file name
-                            current_file = split_name[-1][:-6]
+                            current_file = split_name[-1][:-5]
                             if current_file not in img_dict:
                                 img_dict[current_file] = PMSS_Image()  # if the current file is not in the image dictionary
-                                img_dict[current_file].file_name = "Outlier"  # we need to store the image into the dictionary and note that is an outlier
+                                img_dict[current_file].file_name = current_file + "(Outlier)"  # we need to store the image into the dictionary and note that is an outlier
                                 image_index += 1
                     elif "[" in main_tags_child.string:  # If we find a bracket, check if it is a filename
                         # a list of keys in our image dictionary
@@ -780,7 +785,7 @@ def write_csv(images: dict, bibliographies: list):
     """
     Uses the csv library to write .csv files containing the image's information
     :param page_list: A list of pages that will have their contents output
-    :return:
+    :return: None
     """
     contentdm_columns = ["Title", "Alt. Title", "Identifier", "Creator", "Subject Keywords", "Subject", "Date",
                          "Date Digitized", "Date Uploaded", "Date Accepted", "Publisher", "Contributors", "Type",
@@ -827,53 +832,79 @@ def write_csv(images: dict, bibliographies: list):
 
 
 def compare_scraped_and_phpmyadmin_images(list_of_posts: list, image_dictionary: dict):
-    image_matches = 0
-    print(len(list_of_posts))
-    print(len(image_dictionary))
-    for post in list_of_posts:
-        for scraped_img in image_dictionary.keys():
-            if post.meta_value == image_dictionary[scraped_img].file_name:
-                print(f"{post.meta_value}: True")
-                image_matches += 1
+    """
+    A function that compares of all of the images scraped to all of the images within PHPmyadmin
+    :param list_of_posts: Lists that stores the posts from PHP Admin
+    :param image_dictionary: Dictionary that stores all of the images
+    :return: None
+    """
+    image_matches = 0  # counter to see how many images match
+    print(len(list_of_posts))  # prints the number of posts within phpmyadmin
+    print(len(image_dictionary))  # prints the number of images in the dictionary
+    for post in list_of_posts:   # for each post in the list of posts of PHPmyadmin
+        for scraped_img in image_dictionary.keys():  # for each image scraped from the website that is in the img dict
+            if post.meta_value == image_dictionary[scraped_img].file_name:  # if the post value equals the image scraped
+                print(f"{post.meta_value}: True")  # images have matched
+                image_matches += 1  # increase matched images counter
 
-    print(f"{image_matches}/{len(list_of_posts)} images matched")
+    print(f"{image_matches}/{len(list_of_posts)} images matched")  # print the number of images that have matched
 
 
 def print_results(pages: list, images: dict, transcript_counter: int, caption_counter: int, duplicate_counter: int,
                   bibliographies: list, alt_captions_counter: int, no_caption_counter: int):
-    print(f"{len(pages)} pages scraped")
-    print(f"{len(images)} images scraped")
-    print(f"{transcript_counter} transcriptions scraped")
-    print(f"{caption_counter - (duplicate_counter + alt_captions_counter)} captions scraped")
-    print(f"{no_caption_counter} images with no captions")
-    print(f"{alt_captions_counter} alternate captions scraped")
-    print(f"{duplicate_counter} duplicate captions scraped")
-    print(f"{len(bibliographies)} bibliographies scraped")
+    """
+    A function that prints all of the results from the program.
+    :param pages: List of all the pages that we have scraped
+    :param images: Dictionary that stores all the images that we have
+    :param transcript_counter: Integer, and it keeps up with how many transcripts we have found
+    :param caption_counter:  Integer, and it keeps up with how many captions we have found with our images
+    :param duplicate_counter: Integer, and it keeps up with how many duplicate captions we have found
+    :param bibliographies: List of all the bibliographies that we have scraped
+    :param alt_captions_counter: Integer, and it keeps up with how many alternate captions we have found
+    :param no_caption_counter: Integer, and it keeps up with how many images do not have captions
+    :return: None
+    """
+    print(f"{len(pages)} pages scraped")   # prints how many pages that we have scraped
+    print(f"{len(images)} images scraped")  # prints how many images that we have scraped
+    print(f"{transcript_counter} transcriptions scraped")  # prints how many transcriptions we have scraped
+    print(f"{caption_counter - (duplicate_counter + alt_captions_counter)} captions scraped")  # prints the number of captions we have scraped
+    print(f"{no_caption_counter} images with no captions")  # prints how many images we do not have with captions
+    print(f"{alt_captions_counter} alternate captions scraped")  # prints how many alternate captions we have scraped
+    print(f"{duplicate_counter} duplicate captions scraped")  # prints how many duplicate captions we have scraped
+    print(f"{len(bibliographies)} bibliographies scraped")  # prints the how many bibliographies that we have scraped
 
 
 def write_result_files(bibliographies: list, images: dict, guide_pages: list):
-    with open("Bibliographies_list", "w") as bib_file:
-        info_to_write = f"{len(bibliographies)} bibliographies\n\n"
-        for bib in bibliographies:
-            for attr in bib.keys():
-                info_to_write += f"{attr}: {bib[attr]}\n"
+    """
+    A function that will write the results as files.
+    :param bibliographies: List of bibliographies
+    :param images: Dictionary that stores all of the images
+    :param guide_pages: A list of all the guided web pages
+    :return: None
+    """
+    with open("Bibliographies_list", "w") as bib_file:   # opens the bibliography file
+        info_to_write = f"{len(bibliographies)} bibliographies\n\n"  # writes the number of bibliographies
+        for bib in bibliographies:  # for each bibliography in the list of bibliographies
+            for attr in bib.keys():  # for each column in each bibliography
+                info_to_write += f"{attr}: {bib[attr]}\n"  # write the column name and what is stored there
             info_to_write += "\n\n"
-        bib_file.write(info_to_write)
-    with open("images_list", "w") as img_file:
-        info_to_write = f"{len(images)} images\n\n"
-        for img in images.keys():
+        bib_file.write(info_to_write)  # writes all bibliography info into the file
+    with open("images_list", "w") as img_file: # opens the image file
+        info_to_write = f"{len(images)} images\n\n"   # writes the number of images
+        for img in images.keys():    # for each image in the list of images
+            # add the image information
             info_to_write += f"File name: {images[img].file_name}\n"\
-                             f"Caption: {images[img].caption}\n"\
-                             f"Resized resolution: {images[img].image_resized_resolution[0]}x{images[img].image_resized_resolution[1]}\n" \
-                             f"Transcription: {images[img].transcription}\n"\
-                             f"Upload date: {images[img].upload_date}\n\n\n"
-        img_file.write(info_to_write)
+                f"Caption: {images[img].caption}\n"\
+                f"Resized resolution: {images[img].image_resized_resolution[0]}x{images[img].image_resized_resolution[1]}\n" \
+                f"Transcription: {images[img].transcription}\n"\
+                f"Upload date: {images[img].upload_date}\n\n\n"
+        img_file.write(info_to_write)  # writes all image info into the file
 
     with open("guide_urls", "w") as guide_file:  # opens the file in write mode
-        info_to_write = f"{len(guide_pages)} guide pages\n\n"
+        info_to_write = f"{len(guide_pages)} guide pages\n\n"  # add the number of guide pages there are
         for url in guide_pages:               # for each url in the url list
             info_to_write += f"{url}\n"       # puts URL in the file
-        guide_file.write(info_to_write)
+        guide_file.write(info_to_write)       # write all the information into the file
 
 
 def run_time():
@@ -889,12 +920,6 @@ def run_time():
 
 
 def main():
-    # TODO: uncomment the following 5 lines to run for a specific page
-    # path = os.getcwd() + "/html/"  # TODO: make html folder in same directory if it doesn't exist
-    # file = "GUIDE to BOOK and PERIODICAL Collections - PINE MOUNTAIN SETTLEMENT SCHOOL COLLECTIONS.htm"  # TODO: put filename here
-    # f = open(path + file)
-    # pmss_pages = pages_info(f, file)
-
     pages_list = []
     links_visited = []  # list of links visited
     web(links_visited, 'https://pmss.wpengine.com/', pages_list)
@@ -906,14 +931,18 @@ def main():
                   bib_master_list, alt_captions_counter, no_caption_counter)
     write_result_files(bib_master_list, images_master_list, guide_pages)
 
+    hdd_images = dir_dive()
+    stripped_images = file_split_website(images_master_list)
+    items_to_fix = compare_page_to_hdd(stripped_images, hdd_images)
+    for to_change in items_to_fix:
+        images_master_list[stripped_images[to_change]].file_name = hdd_images[items_to_fix[to_change]]
+
     write_csv(images_master_list, bib_master_list)
     for image in images_master_list.keys():
         captions = images_master_list[image].alt_captions
         captions.append(images_master_list[image].caption)
 
     # phpmyadmin_images = extract_csv_information("image_list_with_captions-j45ab3_posts.csv")
-    # hdd_images = dir_dive()
-    # compare_scraped_and_phpmyadmin_images(phpmyadmin_images, images_master_list)
     run_time()
 
 
