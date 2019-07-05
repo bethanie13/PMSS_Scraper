@@ -14,6 +14,8 @@ import bs4
 from Post import Post
 from io import open as iopen
 import string
+from shutil import copyfile
+
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
     # Code adapted from Francisco Javier Carrera Arias from
@@ -29,8 +31,8 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
     first j characters of t
     """
     # Initialize matrix of zeros
-    rows = len(s)+1
-    cols = len(t)+1
+    rows = len(s) + 1
+    cols = len(t) + 1
     distance = np.zeros((rows, cols), dtype=int)
     row = 0
     col = 0
@@ -47,24 +49,28 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
     # Iterate over the matrix to compute the cost of deletions,insertions and/or substitutions
     for col in range(1, cols):
         for row in range(1, rows):
-            if s[row-1] == t[col-1]:
-                cost = 0  # If the characters are the same in the two strings in a given position [i,j] then the cost is 0
+            if s[row - 1] == t[col - 1]:
+                cost = 0
+                # If the characters are the same in the two strings in a given position [i,j]
+                # then the cost is 0
             else:
-                # In order to align the results with those of the Python Levenshtein package, if we choose to calculate the ratio
+                # In order to align the results with those of the Python Levenshtein package,
+                # if we choose to calculate the ratio
                 # the cost of a substitution is 2. If we calculate just distance, then the cost of a substitution is 1.
                 if ratio_calc:
                     cost = 2
                 else:
                     cost = 1
-            distance[row][col] = min(distance[row-1][col] + 1,      # Cost of deletions
-                                     distance[row][col-1] + 1,          # Cost of insertions
-                                     distance[row-1][col-1] + cost)     # Cost of substitutions
+            distance[row][col] = min(distance[row - 1][col] + 1,  # Cost of deletions
+                                     distance[row][col - 1] + 1,  # Cost of insertions
+                                     distance[row - 1][col - 1] + cost)  # Cost of substitutions
     if ratio_calc:
         # Computation of the Levenshtein Distance Ratio
-        ratio = ((len(s)+len(t)) - distance[row][col]) / (len(s)+len(t))
+        ratio = ((len(s) + len(t)) - distance[row][col]) / (len(s) + len(t))
         return ratio
     else:
-        # print(distance) # Uncomment if you want to see the matrix showing how the algorithm computes the cost of deletions,
+        # Uncomment if you want to see the matrix showing how the algorithm computes the cost of deletions,
+        # print(distance)
         # insertions and/or substitutions
         # This is the minimum number of edits needed to convert string a to string b
         return "The strings are {} edits away".format(distance[row][col])
@@ -76,16 +82,19 @@ def dir_dive():
     :return: A dictionary of names of files
     """
     os.chdir("/Volumes/Elements/PMSS_ARCHIVE")  # looks at this specific directory
-    tifs = {}                                 # dictionary to store all of the tif images
-    for root, dirs, files in os.walk(".", topdown=False):  # finds all files within the directory and within all sub-directories
+    tifs = {}  # dictionary to store all of the tif images
+    # finds all files within the directory and within all sub-directories
+    for root, dirs, files in os.walk(".", topdown=False):
         for name in files:
-            original = name                      # original file name that includes .tif
-            if name[-4:] == ".tif":               # if the extension is tif
-                for punct in string.punctuation:   # for every punctuation
-                    name = name.replace(punct, "")    # removes all instances of a specific punctuation
+            original = name  # original file name that includes .tif
+            if name[-4:] == ".tif":  # if the extension is tif
+                for punct in string.punctuation:  # for every punctuation
+                    name = name.replace(punct, "")  # removes all instances of a specific punctuation
                 name = name.replace(" ", "")
-                tifs[name] = original      # stores the file name with punctuation removed as the key in the dictionary with the original file name as the value
-    return tifs                                 # returns the dictionary with all tifs
+                # stores the file name with punctuation removed as the key in the dictionary
+                # with the original file name as the value
+                tifs[name] = original
+    return tifs  # returns the dictionary with all tifs
 
 
 def file_split_website(list_of_images):
@@ -95,11 +104,13 @@ def file_split_website(list_of_images):
     :return: A dictionary of file names
     """
     file_list = {}  # dictionary to store all file names from the web site
-    for image in list_of_images:   # for each image in the list of images
+    for image in list_of_images:  # for each image in the list of images
         name_to_fix = list_of_images[image].file_name  # store the original file name to be put in the dictionary
-        for punct in string.punctuation:               # for every punctuation
+        for punct in string.punctuation:  # for every punctuation
             name_to_fix = name_to_fix.replace(punct, "")  # removes all instances of a specific punctuation
-        file_list[name_to_fix] = image # stores the file name with punctuation removed as the key in the dictionary with the original file name as the value
+            # stores the file name with punctuation removed as the key in the dictionary
+            # with the original file name as the value
+        file_list[name_to_fix] = image
     return file_list  # returns the dictionary with all the files
 
 
@@ -111,15 +122,16 @@ def compare_page_to_hdd(web_images, hdd_images):
     :return: Dictionary of all images that have matched with each other
     """
     match_count = 0
-    matched_items = {}   # Dictionary of all images that have matched with each other
-    for image in web_images:   # for each image in the dictionary of web images
+    matched_items = {}  # Dictionary of all images that have matched with each other
+    for image in web_images:  # for each image in the dictionary of web images
         for source in hdd_images:  # for each image in the hard drive
-            if image[:-3] == source[:-3]:   # removes extensions like tif or jpg and then compares the two file names
-                if source[-3:] == "tif":    # if the extension is tif
-                    matched_items[image] = source  # store the file name from web site as the key and the hard drive file name as the value
+            if image[:-3] == source[:-3]:  # removes extensions like tif or jpg and then compares the two file names
+                if source[-3:] == "tif":  # if the extension is tif
+                    # store the file name from web site as the key and the hard drive file name as the value
+                    matched_items[image] = source
                     match_count += 1
     print(f"{match_count} pictures were replaced with their \"tif\" counterpart")
-    return matched_items   # return dict with matched file names
+    return matched_items  # return dict with matched file names
 
 
 def extract_csv_information(filename):
@@ -128,7 +140,7 @@ def extract_csv_information(filename):
     :param filename:
     :return:
     """
-    csv_info_list = []   # creates a list
+    csv_info_list = []  # creates a list
     with open(filename) as file:
         info = file.read()
         info = info.split("\n")
@@ -158,6 +170,7 @@ def web(links_visited, web_url, pages_list):
     Web Crawler that will scan through the pmss webpage and find all different links from various pages
     :param links_visited: List that will store all of the links visited through the crawler
     :param web_url: The Urls that will be visited
+    :param pages_list: A list that will hold all the information for every page
     :return: None
     """
     urls_to_skip = ["https://pmss.wpengine.com/?page_id=19612",
@@ -171,7 +184,8 @@ def web(links_visited, web_url, pages_list):
     ext = ["jpg", "png", "tif", "ppt", "pptx"]  # extensions of images
     if domain != "https://pmsswpengine":  # base case we always need this url for our domain
         return  # it will only scrape data within the domain of pmss
-    if web_url in links_visited or web_url in urls_to_skip:  # base case if we have already visited the link we do not want to re-visit it over
+    # base case if we have already visited the link we do not want to re-visit it over
+    if web_url in links_visited or web_url in urls_to_skip:
         return
     # TODO: If you want to change the number of pages to crawl through, change the number below
     # if len(links_visited) > 500:  # restriction for the amount of pages we want to search (temporary)
@@ -180,7 +194,7 @@ def web(links_visited, web_url, pages_list):
         return
     links_visited.append(web_url)  # append the urls that we visit to a list of links visited
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
-      (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}  # the User-Agent header makes our code not look like a bot
+      (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}  # the User-Agent header mimics a browser
 
     result = requests.get(web_url, headers=headers)
     plain = result.text  # raw html
@@ -216,21 +230,18 @@ def pages_info(text, url):
     """
     Driver function for getting information for a page.
     :param text: full html as plain text
-    :param url: The url for the webpage
+    :param url: The url for the web page
     :return: page object
     """
-    current_page = Page()         # creates a new page object
+    current_page = Page()  # creates a new page object
     web_page = BeautifulSoup(text, 'html.parser')  # Create a new Beautiful Soup object
     current_page.images = image_info(web_page)
     captions = find_captions(web_page)
     image_caption_linking(captions, current_page.images)
-    # TODO: The following 3 lines are for getting bibliographies
-    current_page.bibliography, partial_bib = bibliography_pairings(web_page)   # check for bibliographies on the page
-    current_page.url = url                        # save the current url with in the page's attributes
+    current_page.bibliography, partial_bib = bibliography_pairings(web_page)  # check for bibliographies on the page
+    current_page.url = url  # save the current url with in the page's attributes
     # check_if_guide(web_page, current_page)
-    # TODO: This is for getting transcriptions
     find_transcriptions(web_page, current_page.images)
-    # TODO: Print out all the information gathered from the page
     show_results(current_page)
     return current_page
 
@@ -241,11 +252,11 @@ def image_info(page_soup):
     :param page_soup: A Beautiful Soup object
     :return: A dictionary containing all of the images from the page
     """
-    images_dict = {}            # create a dictionary for the images
-    page_tags = image_tags(page_soup) # gets the tags for the page
+    images_dict = {}  # create a dictionary for the images
+    page_tags = image_tags(page_soup)  # gets the tags for the page
     for image in page_soup.find_all('img'):  # for an image it will find all of the img tags within the html of the page
-        if image.get("src"):                 # if our image has a src attribute
-            temp = PMSS_Image()              # initialize a new image instance
+        if image.get("src"):  # if our image has a src attribute
+            temp = PMSS_Image()  # initialize a new image instance
 
             src = image.get("src")
             # Pull out the id that will be used to find this image's caption
@@ -266,13 +277,14 @@ def image_info(page_soup):
             # Attempts to save the image
             download_image(temp, src)
 
-            if image.parent.name == "figure":       # If we are looking at an image from a figure tag
-                for tag in image.parent.children:   # for each of the tag's siblings
-                    if tag.name == "figcaption":    # if a sibling's tag namme is figcaption
-                        temp.caption = tag.string   # save the text as it is the caption for our image
-            file_names_skip = ["220px-Norman_Thomas_1937.jpg", "12px-Wikisource-logo.svg.png", "Emma_Lucy_Braun.jpg",  # ignore these files because they're irrelevant to scraping
+            if image.parent.name == "figure":  # If we are looking at an image from a figure tag
+                for tag in image.parent.children:  # for each of the tag's siblings
+                    if tag.name == "figcaption":  # if a sibling's tag namme is figcaption
+                        temp.caption = tag.string  # save the text as it is the caption for our image
+            file_names_skip = ["220px-Norman_Thomas_1937.jpg", "12px-Wikisource-logo.svg.png", "Emma_Lucy_Braun.jpg",
+                               # ignore these files because they're irrelevant to scraping
                                "04025r.jpg", "apf1-00354r.jpg", "cropped-pmss_spelman_pntg_edited_2_brightened_x.jpg"]
-            if temp.file_name not in file_names_skip:  # Ignore the header image
+            if temp.file_name not in file_names_skip and ".gif" not in temp.file_name:  # Ignore the header image
                 # Copy the image to a dictionary
                 images_dict[temp.file_name[:-len(temp.file_name.split(".")[-1]) - 1].lower()] = copy.copy(temp)
     return images_dict
@@ -288,22 +300,27 @@ def download_image(image, src):
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36\
           (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
     hdd_image_path = "/Volumes/Elements/Scraped_Images/"
-    os.chdir(hdd_image_path)    # changes directory to the location that we want to save images
+    os.chdir(hdd_image_path)  # changes directory to the location that we want to save images
     upload_date = image.upload_date.split("/")  # gets the upload date to be used in setting the save directory
 
-    for partial_date in upload_date:            # for each part fo the date in the upload date
-        try:                                    # try to go into the csv directory
-            os.chdir(partial_date)              # change directory to the partial date
-        except FileNotFoundError:               # if the directory does not exist
-            os.mkdir(partial_date)              # make directory for the partial date
-            os.chdir(partial_date)              # change directory to the newly made directory
-    file_path = os.getcwd() + "/" + image.file_name     # file path is the path to the file that we are potentially going to save
-    if not path.exists(file_path):              # if the file name already exists
-        if "C:/" not in src:                    # if the image URL we want to save is not a hard drive path
-            response = requests.get(src, headers=headers)       # gets the image itself; raw image data
-            if response.status_code != 404:     # if the image exists
+    for partial_date in upload_date:  # for each part fo the date in the upload date
+        try:  # try to go into the csv directory
+            os.chdir(partial_date)  # change directory to the partial date
+        except FileNotFoundError:  # if the directory does not exist
+            os.mkdir(partial_date)  # make directory for the partial date
+            os.chdir(partial_date)  # change directory to the newly made directory
+
+    # file path is the path to the file that we are potentially going to save
+    file_path = os.getcwd() + "/" + image.file_name
+    if not path.exists(file_path):  # if the file name already exists
+        if "C:/" not in src and ".gif" not in src:  # if the image URL we want to save is not a hard drive path
+            img_resolution = "-" + str(image.image_resized_resolution[0]) + "x" + str(image.image_resized_resolution[1])
+            if img_resolution in src:
+                src = src.replace(img_resolution, "")
+            response = requests.get(src, headers=headers)  # gets the image itself; raw image data
+            if response.status_code != 404:  # if the image exists
                 with iopen(file_path, "wb") as image_file:  # retrieves image from file path
-                    image_file.write(response.content)      # writes the image data in to the file
+                    image_file.write(response.content)  # writes the image data in to the file
 
 
 def caption_link(tag, img):
@@ -315,8 +332,9 @@ def caption_link(tag, img):
     :return: None
     """
     if tag.get("aria-describedby"):
-        img.caption_link = tag.get("aria-describedby")  # retrieves the link of the caption by looking for the key word of
-    # aria-describedby and gets the tag from it
+        img.caption_link = tag.get("aria-describedby")
+        # retrieves the link of the caption by looking for the key word of
+        # aria-describedby and gets the tag from it
 
 
 def image_file_path_info(tag, img):
@@ -327,12 +345,12 @@ def image_file_path_info(tag, img):
     :param img: an instance of the Images class for storing the given  information
     :return: None
     """
-    file_path = tag.get("src")            # looks for the tag of src within its file path
-    file_split = file_path.split("/")     # splits the file path when it encounters a /
-    img.file_name = file_split[-1]        # retrieves the file name once the file has been split
-    year = file_split[-3]                 # retrieves the year the image was uploaded from the file name
-    month = file_split[-2]                # retrieves the month the image was uploaded from the file name
-    img.upload_date = year + "/" + month  # uploads the date of the image based on month and year
+    file_path = tag.get("src")  # looks for the tag of src within its file path
+    file_split = file_path.split("/")  # splits the file path when it encounters a /
+    img.file_name = file_split[-1]  # retrieves the file name once the file has been split
+    year = file_split[-3]  # retrieves the year the image was uploaded from the file name
+    month = file_split[-2]  # retrieves the month the image was uploaded from the file name
+    img.upload_date = month + "/" + year  # uploads the date of the image based on month and year
 
 
 def image_resolution(tag, img):
@@ -342,7 +360,7 @@ def image_resolution(tag, img):
     :param img: An Image object
     :return: None
     """
-    img.image_resized_resolution[0] = tag.get("width")   # outputs the width resolution of the image
+    img.image_resized_resolution[0] = tag.get("width")  # outputs the width resolution of the image
     img.image_resized_resolution[1] = tag.get("height")  # outputs the height resolution of the image
 
 
@@ -353,19 +371,21 @@ def find_captions(page_soup):
     :param page_soup: Beautiful Soup object
     :return: captions_dict
     """
-    captions_dict = {}                            # a dictionary to store all of the captions
-    for caption in page_soup.find_all('dd'):     # for every caption look for the tag "dd"
-        temp = Caption()                       # temporarily stores a caption for class constructor
-        temp.image_link = caption.get('id')     # retrieves the caption through the tag of "id" which will be image link
-        temp.caption = caption.string[5:-5]     # save the caption ignoring all the \n's near it
-        captions_dict[temp.image_link] = copy.copy(temp)  # makes a shallow copy of the image link stored in the dictionary
-    for caption in page_soup.find_all('p'):         # for every caption find the "p" tags
-        temp = Caption()                      # temporarily stores a caption for class constructor
-        temp.image_link = caption.get('id')    # retrieves the caption through the tag of "id" which will be image link
-        temp.caption = caption.string           # converts caption to a string
-        captions_dict[temp.image_link] = copy.copy(temp)  # makes a shallow copy of the image link stored in the dictionary
+    captions_dict = {}  # a dictionary to store all of the captions
+    for caption in page_soup.find_all('dd'):  # for every caption look for the tag "dd"
+        temp = Caption()  # temporarily stores a caption for class constructor
+        temp.image_link = caption.get('id')  # retrieves the caption through the tag of "id" which will be image link
+        temp.caption = caption.string[5:-5]  # save the caption ignoring all the \n's near it
+        captions_dict[temp.image_link] = copy.copy(
+            temp)  # makes a shallow copy of the image link stored in the dictionary
+    for caption in page_soup.find_all('p'):  # for every caption find the "p" tags
+        temp = Caption()  # temporarily stores a caption for class constructor
+        temp.image_link = caption.get('id')  # retrieves the caption through the tag of "id" which will be image link
+        temp.caption = caption.string  # converts caption to a string
+        captions_dict[temp.image_link] = copy.copy(
+            temp)  # makes a shallow copy of the image link stored in the dictionary
 
-    return captions_dict                        # return the dictionary
+    return captions_dict  # return the dictionary
 
 
 def image_caption_linking(captions_dict, images_dict):
@@ -379,9 +399,10 @@ def image_caption_linking(captions_dict, images_dict):
         for image in images_dict.keys():  # for every image in the image dictionary
             if images_dict[image].caption_link:  # If a caption link id was found
                 if not images_dict[image].caption:  # if a caption has not been found yet
-                    if captions_dict[caption].image_link == images_dict[
-                            image].caption_link:  # if the caption dictionary matches the image dictionary
-                        images_dict[image].caption = captions_dict[caption].caption  # then the image will go with the caption
+                    # if the caption dictionary matches the image dictionary
+                    if captions_dict[caption].image_link == images_dict[image].caption_link:
+                        images_dict[image].caption = captions_dict[
+                            caption].caption  # then the image will go with the caption
 
 
 def image_tags(page_soup):
@@ -391,35 +412,35 @@ def image_tags(page_soup):
     :return: String of tags
     """
     all_p = page_soup.find_all("p")  # finds all p tags on web page
-    tags = ""    # create a string to store all of the tags
-    for tag in all_p:   # for each tag within the p tags
+    tags = ""  # create a string to store all of the tags
+    for tag in all_p:  # for each tag within the p tags
         if tag.string:  # if the tag has a string
             if "TAGS:" in tag.string:  # if "TAGS" is in that string
                 tag_body = tag.string.split("TAGS:")  # removes "TAGS" from the string
                 for descr_tag in tag_body[1].split(";"):  # for each descriptive tag
-                    if descr_tag:               # if the descriptive tag is not blank
+                    if descr_tag:  # if the descriptive tag is not blank
                         cleaned_tag = descr_tag.replace(u'\xa0', u' ')  # replace "NBSP" with an actual space
                         if len(cleaned_tag) > 2:  # if the tag is bigger than 2 characters
                             while cleaned_tag[0] == " ":  # while the first element is not an actual character
                                 cleaned_tag = cleaned_tag[1:]  # save contents except the first element
-                            while cleaned_tag[-1] == " ":       # while the last element is not an actual character
+                            while cleaned_tag[-1] == " ":  # while the last element is not an actual character
                                 cleaned_tag = cleaned_tag[:-1]  # save contents except the last element
-                            tags += "\"" + cleaned_tag + "\" "  # concatenate the tag to a string
+                            tags += cleaned_tag + ", "  # concatenate the tag to a string
         else:
-            for child in tag.children:   # if the tag does not have a string look at the child of the tag
+            for child in tag.children:  # if the tag does not have a string look at the child of the tag
                 if child.string:  # if the child has a string
 
-                    if "TAGS:" in child.string:   # if "TAGS" is in that child string
+                    if "TAGS:" in child.string:  # if "TAGS" is in that child string
                         tag_body = child.next_sibling.string  # looks at the siblings of that string
                         for descr_tag in tag_body.split(";"):  # for each descriptive tag
                             if descr_tag:  # if the descriptive tag is not blank
                                 cleaned_tag = descr_tag.replace(u'\xa0', u' ')  # replace "NBSP" with an actual space
                                 if len(cleaned_tag) > 2:  # if the tag is bigger than 2 characters
-                                    while cleaned_tag[0] == " ":   # while the first element is not an actual character
+                                    while cleaned_tag[0] == " ":  # while the first element is not an actual character
                                         cleaned_tag = cleaned_tag[1:]  # save contents except the first element
-                                    while cleaned_tag[-1] == " ":      # while the first element is not an actual character
+                                    while cleaned_tag[-1] == " ":  # while the first element is not an actual character
                                         cleaned_tag = cleaned_tag[:-1]  # save contents except the last element
-                                    tags += "\"" + cleaned_tag + "\" "  # concatenate the tag to a string
+                                    tags += cleaned_tag + ", "  # concatenate the tag to a string
     return tags  # return the string that contains all the tags
 
 
@@ -462,30 +483,36 @@ def find_transcriptions(page_soup, img_dict):
                 if tag.string:
                     if "2" in tag.string:  # If we find a place where there is a number 2
                         if 0 < len(tag.string) <= 3:  # If that number 2 is the only thing in the tag
-                            current_tag = tag.previous_sibling  # move to the previous sibling (the text above our current text)
+                            # move to the previous sibling (the text above our current text)
+                            current_tag = tag.previous_sibling
                             transcript = ""
                             while current_tag.name not in header_tags:  # keep moving up until we reach a header tag
                                 if current_tag.name != "div":  # If it's not related to an image
                                     transcript = get_tags_text(
                                         current_tag) + transcript  # recursive call for getting all of the text
-                                current_tag = current_tag.previous_sibling  # after getting the text for the tag, move back one sibling
-                            recording = True  # We assume if we encounter just a number, it is a page number for a transcription
+                                # after getting the text for the tag, move back one sibling
+                                current_tag = current_tag.previous_sibling
+                            # We assume if we encounter just a number, it is a page number for a transcription
+                            recording = True
                     if 3 < len(tag.string) <= 8:  # If the text length is between 3 and 8 it is likely to be "page ##"
                         page_source = ""  # This will hold the "page ##" that the transcript comes from since we don't
                         # have an associated image
                         for word in tag.string.split():  # split the string that is in the tag into different words
-                            if word.lower() == "page":  # looking for the word page in order to find where the transcript is seperated
+                            # looking for the word page in order to find where the transcript is separated
+                            if word.lower() == "page":
                                 page_source += word  # add the word "page" to the page source
                             else:  # if our word is anything other than "page"
                                 try:
                                     int(word)  # Is this an integer? (e.g. 1, 2, 3, 4 etc.)
-                                    page_source += word  # if int(word) doesn't cause a ValueError, we know it is an integer
+                                    # if int(word) doesn't cause a ValueError, we know it is an integer
+                                    page_source += word
                                 except ValueError:  # If it is not "page" or a number we don't want to add it
                                     pass
                         if len(page_source) >= 5:  # if the length of the page source is > 2
                             img_dict[
                                 page_source] = PMSS_Image()  # Create a new object with page_source as a key
-                            current_file = page_source  # Set the current_file as page_source (so we store the transcript in the right place)
+                            # Set the current_file as page_source (so we store the transcript in the right place)
+                            current_file = page_source
                             recording = True  # Turn recording on as we are looking at a page's transcription
             for main_tags_child in tag.children:
                 if main_tags_child.string:
@@ -495,13 +522,38 @@ def find_transcriptions(page_soup, img_dict):
 
                     elif ".jpg" in main_tags_child.string:
                         if recording:
-                            split_name = main_tags_child.string.split(
-                                "[")  # if .jpg found then we will then extract file name
-                            current_file = split_name[-1][:-5]
-                            if current_file not in img_dict:
-                                img_dict[current_file] = PMSS_Image()  # if the current file is not in the image dictionary
-                                img_dict[current_file].file_name = current_file + "(Outlier)"  # we need to store the image into the dictionary and note that is an outlier
-                                image_index += 1
+                            if "lin_f" in main_tags_child.string:
+                                x = 1
+                            split_name = main_tags_child.string
+                            if "[" in main_tags_child.string or "]" in main_tags_child.string:
+                                if "[" in main_tags_child.string:
+                                    split_name = split_name.split(
+                                        "[")[1]  # if .jpg found then we will then extract file name
+                                if "]" in main_tags_child.string:
+                                    split_name = split_name.split("]")[0]
+                                current_file = split_name
+                                if " " in current_file:
+                                    for piece in current_file.split(" "):
+                                        if ".jpg" in piece:
+                                            current_file = piece
+                                if current_file[:-4] not in img_dict:
+                                    # if the current file is not in the image dictionary
+                                    img_dict[current_file[:-4]] = PMSS_Image()
+                                    # we need to store the transcript into the dictionary and note that is an outlier
+                                    img_dict[current_file[:-4]].file_name = current_file
+                                    image_index += 1
+                                current_file = current_file[:-4]
+
+                            else:
+                                current_file = main_tags_child.string
+                                if " " in current_file:
+                                    for piece in current_file.split(" "):
+                                        if ".jpg" in piece:
+                                            current_file = piece
+                                img_dict[current_file[:-4]] = PMSS_Image()
+                                img_dict[current_file[:-4]].file_name = current_file
+                                current_file = current_file[:-4]
+
                     elif "[" in main_tags_child.string:  # If we find a bracket, check if it is a filename
                         # a list of keys in our image dictionary
                         keys = list(img_dict)
@@ -519,7 +571,8 @@ def find_transcriptions(page_soup, img_dict):
                                                                       True) >= .80:
                                         current_file = keys[image_index]  # update the current file
                                         image_index += 1  # increase the image index
-                                        part_of_transcription = False  # since we determined it is a file name, this is now False
+                                        # since we determined it is a file name, this is now False
+                                        part_of_transcription = False
                         if part_of_transcription:  # If the text was deemed to not be a file
                             record_transcript(img_dict, recording, current_file, main_tags_child)  # record the text
 
@@ -529,17 +582,20 @@ def find_transcriptions(page_soup, img_dict):
                     elif main_tags_child.name == "div":  # we do not care about other div tags
                         pass
 
-                    elif main_tags_child.parent.name == "p" and main_tags_child.name != "div":  # if the tags parent is the p tag and the child is not in the div tag
+                    # if the tags parent is the p tag and the child is not in the div tag
+                    elif main_tags_child.parent.name == "p" and main_tags_child.name != "div":
                         record_transcript(img_dict, recording, current_file,
                                           main_tags_child)  # we record the transcription into the dictionary
 
                     else:  # if we reach any other tag
                         if main_tags_child.previous_sibling:  # if the child of the main tag is in the previous level
-                            previous_tag = main_tags_child.previous_sibling.name  # make the previous tag the previous level of the main tags child which is in the same level
+                            # make the previous tag the previous level of the main tags child which is in the same level
+                            previous_tag = main_tags_child.previous_sibling.name
                         else:
                             previous_tag = None  # if not there is no previous tag
                         if main_tags_child.next_sibling:  # if the child of the main tag is in the next level
-                            next_tag = main_tags_child.next_sibling.name  # make the next tag the next level of the main tags child which is in the same level
+                            # make the next tag the next level of the main tags child which is in the same level
+                            next_tag = main_tags_child.next_sibling.name
                         else:
                             next_tag = None  # if not there is no next tag
                         if previous_tag == "span" or \
@@ -588,11 +644,11 @@ def bibliography_pairings(page_soup):
     :return: A dictionary containing all of the bibliography pairings
     """
     table = page_soup.find_all("table")  # finds all the table tags on the specific web page
-    if table:                            # if the table tag exists
-        table = table[-1]                # looks at the last table on the page
+    if table:  # if the table tag exists
+        table = table[-1]  # looks at the last table on the page
 
-    count_data = 0   # used to store data in twos (count data will increment to 2 and then reset to 0 when data is saved
-    bibliography_dict = {}       # dictionary that will store all of the bibliographies
+    count_data = 0  # used to store data in twos (count data will increment to 2 and then reset to 0 when data is saved
+    bibliography_dict = {}  # dictionary that will store all of the bibliographies
     # list of all possible row titles lowered to use as a reference for comparing information
     table_row_titles_lower = ["title", "alt. title", "identifier", "creator", "alt. creator", "subject keyword",
                               "subject lcsh", "date digital", "date original", "date",
@@ -605,30 +661,33 @@ def bibliography_pairings(page_soup):
                         "Publisher", "Contributor", "Type", "Format", "Source", "Language", "Relation",
                         "Coverage Temporal", "Coverage Spatial", "Rights", "Donor", "Description", "Acquisition",
                         "Citation", "Processed by", "Last updated", "Bibliography"]
-    count_key = 0         # stores how many keys have been saved
-    row_title_list = []   # list of all the row titles
-    row_info_list = []    # list of all the row information
+    count_key = 0  # stores how many keys have been saved
+    row_title_list = []  # list of all the row titles
+    row_info_list = []  # list of all the row information
 
-    for tbody in table:     # for each tbody in the table
-        if tbody != "\n" and tbody.name != "colgroup":      # if tbody is not a new line or colgroup tag
-            for row in tbody.children:                      # for each row in the table
-                if row != "\n"and row.name != "colgroup":   # if row is not a new line or colgroup tag
-                    for table_data in row.children:         # for each table data in the children of the rows
-                        if table_data != "\n" and table_data.name != "colgroup":   # if table data is not a new line or colgroup tag
-                            if count_data == 0:             # if this is the first item
+    for tbody in table:  # for each tbody in the table
+        if tbody != "\n" and tbody.name != "colgroup":  # if tbody is not a new line or colgroup tag
+            for row in tbody.children:  # for each row in the table
+                if row != "\n" and row.name != "colgroup":  # if row is not a new line or colgroup tag
+                    for table_data in row.children:  # for each table data in the children of the rows
+                        # if table data is not a new line or colgroup tag
+                        if table_data != "\n" and table_data.name != "colgroup":
+                            if count_data == 0:  # if this is the first item
                                 bibliography_text_retrieval(table_data, row_title_list)  # recursively get the text
 
-                            if count_data != 0:             # if this is the second item
+                            if count_data != 0:  # if this is the second item
                                 bibliography_text_retrieval(table_data, row_info_list)  # recursively get the text
 
-                            count_data += 1                 # increment counter of how much data has been stored
+                            count_data += 1  # increment counter of how much data has been stored
 
-                if count_data > 1:                          # if we have at least two data items
-                    count_data = 0                          # reset counter
-                    if len(row_title_list) == len(row_info_list):  # if the length of title list and info list are the same
-                        for i in range(len(row_title_list)):       # for each item
-                            if row_title_list[i].lower() not in table_row_titles_lower:  # if the current item is not in the reference list
-                                is_part_of_dict = False            # assume it is not a part of the bibliography
+                if count_data > 1:  # if we have at least two data items
+                    count_data = 0  # reset counter
+                    if len(row_title_list) == len(
+                            row_info_list):  # if the length of title list and info list are the same
+                        for i in range(len(row_title_list)):  # for each item
+                            # if the current item is not in the reference list
+                            if row_title_list[i].lower() not in table_row_titles_lower:
+                                is_part_of_dict = False  # assume it is not a part of the bibliography
                                 for title in table_row_titles_lower:  # for each item in the reference list
                                     # if the reference item and the row title are similar but not an exact match
                                     if levenshtein_ratio_and_distance(title, row_title_list[i].lower(), True) >= .80:
@@ -639,23 +698,24 @@ def bibliography_pairings(page_soup):
                                         bibliography_dict[table_row_titles[item_index]] = row_info_list[i]
                                         count_key += 1  # increment how many keys have been saved
                                         break
-                                if not is_part_of_dict:             # if no reference items match
-                                    bibliography_dict = {}          # clear the dictionary
+                                if not is_part_of_dict:  # if no reference items match
+                                    bibliography_dict = {}  # clear the dictionary
                                     return bibliography_dict, True  # return empty dictionary
                             else:  # if the current item is in the reference list
                                 bibliography_dict[row_title_list[i]] = row_info_list[i]  # add item to the dictionary
                                 count_key += 1  # increment how many keys have been saved
-                        row_title_list = []     # clear the title lists
-                        row_info_list = []      # clear the info lists
+                        row_title_list = []  # clear the title lists
+                        row_info_list = []  # clear the info lists
                     else:  # if the length of title list and info list are not the same
-                        full_title = ""   # string for holding all of the text in the title list
-                        full_info = ""    # string for holding all of the text in the info list
+                        full_title = ""  # string for holding all of the text in the title list
+                        full_info = ""  # string for holding all of the text in the info list
                         for title in row_title_list:  # for each title in the list
-                            full_title += title       # add the title to the full string
-                        for info in row_info_list:    # for each piece of info in the list
-                            full_info += info         # add the info to the full string
-                        if full_title.lower() not in table_row_titles_lower:  # if the title is not in the reference list
-                            is_part_of_dict = False                         # assume it is not part of the bibliography
+                            full_title += title  # add the title to the full string
+                        for info in row_info_list:  # for each piece of info in the list
+                            full_info += info  # add the info to the full string
+                        # if the title is not in the reference list
+                        if full_title.lower() not in table_row_titles_lower:
+                            is_part_of_dict = False  # assume it is not part of the bibliography
                             for title in table_row_titles_lower:
                                 # if the reference item and the row title are similar but not an exact match
                                 if levenshtein_ratio_and_distance(title, full_title, True) >= .80:
@@ -666,19 +726,19 @@ def bibliography_pairings(page_soup):
                                     bibliography_dict[table_row_titles[item_index]] = full_info
                                     count_key += 1  # increment how many keys have been saved
                                     break
-                            if not is_part_of_dict:             # if no reference items match
-                                bibliography_dict = {}          # clear the dictionary
+                            if not is_part_of_dict:  # if no reference items match
+                                bibliography_dict = {}  # clear the dictionary
                                 return bibliography_dict, True  # return empty dictionary
                         else:  # if the title is in the reference list
                             bibliography_dict[full_title] = full_info  # add the title and info to the bibliography
                             count_key += 1  # increment how many keys have been saved
                         row_title_list = []  # clear the title lists
-                        row_info_list = []   # clear the info lists
+                        row_info_list = []  # clear the info lists
 
-    if 5 <= count_key <= len(table_row_titles)-6:  # if the amount of keys saved is between 5 and 20
-        return bibliography_dict, True             # return while indicating only a portion of the bibliography was found
+    if 5 <= count_key <= len(table_row_titles) - 6:  # if the amount of keys saved is between 5 and 20
+        return bibliography_dict, True  # return while indicating only a portion of the bibliography was found
     else:
-        return bibliography_dict, False            # return full bibliography
+        return bibliography_dict, False  # return full bibliography
 
 
 def bibliography_text_retrieval(tag, column_list):
@@ -689,30 +749,31 @@ def bibliography_text_retrieval(tag, column_list):
     :return: None
     """
 
-    if tag.string:                       # if we are at the last descendant (the text of the tag)
-        text = ""                        # text that will be appended to column list
-        if "\n" in tag.string:           # if there exists a new line character within the tag's string
+    if tag.string:  # if we are at the last descendant (the text of the tag)
+        text = ""  # text that will be appended to column list
+        if "\n" in tag.string:  # if there exists a new line character within the tag's string
             for piece in tag.string.split("\n"):  # split on new line character to ignore them
-                if piece != "":                   # if the current part of the split string is not empty
-                    text += piece + " "           # add the part and a space
-        else:                                     # if there is not a new line character
-            text = tag.string                     # add the tag's string to the text variable
-        if isinstance(text, bs4.element.NavigableString):    # if the type of text is a Navigable String
-            column_list.append(text)                         # if it is append text to the column list
+                if piece != "":  # if the current part of the split string is not empty
+                    text += piece + " "  # add the part and a space
+        else:  # if there is not a new line character
+            text = tag.string  # add the tag's string to the text variable
+        if isinstance(text, bs4.element.NavigableString):  # if the type of text is a Navigable String
+            column_list.append(text)  # if it is append text to the column list
         return
-    for child in tag.children:                               # for each of the current tag's children
-        bibliography_text_retrieval(child, column_list)      # recursive function call to build the bibliography
-    return                                                   # return the full text
+    for child in tag.children:  # for each of the current tag's children
+        bibliography_text_retrieval(child, column_list)  # recursive function call to build the bibliography
+    return  # return the full text
 
 
 def check_if_guide(page_soup, page):
-    header_tags = ["h1", "h2"]   # header tags we need to check in
-    for header in header_tags:   # for each header in the list of header tags
-        entry_title = page_soup.find(header, attrs={"class": "entry-title"})  # finds and stores the tag who's class is entry-title
-        if entry_title:                             # if the tag was found
-            if entry_title.string:                  # if the tag has a string
-                if "GUIDE" in entry_title.string:   # if GUIDE is in that string
-                    page.is_guide = True            # mark page as being a GUIDE page
+    header_tags = ["h1", "h2"]  # header tags we need to check in
+    for header in header_tags:  # for each header in the list of header tags
+        entry_title = page_soup.find(header, attrs={
+            "class": "entry-title"})  # finds and stores the tag who's class is entry-title
+        if entry_title:  # if the tag was found
+            if entry_title.string:  # if the tag has a string
+                if "GUIDE" in entry_title.string:  # if GUIDE is in that string
+                    page.is_guide = True  # mark page as being a GUIDE page
 
 
 def show_results(page):
@@ -721,10 +782,10 @@ def show_results(page):
     :param page: List of all the web pages
     :return: None
     """
-    print(page.url + "\n\n")              # prints the current pages URL
-    for image in page.images.keys():      # for an image in the pages return a list of keys from dictionary
-        print(image)                      # prints image's file name
-        print(page.images[image])         # prints image information
+    print(page.url + "\n\n")  # prints the current pages URL
+    for image in page.images.keys():  # for an image in the pages return a list of keys from dictionary
+        print(image)  # prints image's file name
+        print(page.images[image])  # prints image information
 
 
 def create_master_list(pages_list):
@@ -733,19 +794,19 @@ def create_master_list(pages_list):
     :param pages_list: List of pages
     :return: Complete list of all the bibliographies, all of the images, and list of guide pages
     """
-    list_of_images = {}   # Dictionary that will contain all the images
-    list_of_bibs = []     # List that will contain all the bibliographies
-    guide_pages = []      # List that will contain all the URLs for the guide pages
+    list_of_images = {}  # Dictionary that will contain all the images
+    list_of_bibs = []  # List that will contain all the bibliographies
+    guide_pages = []  # List that will contain all the URLs for the guide pages
     transcript_counter = 0
     caption_counter = 0
     duplicate_counter = 0
     alt_captions_counter = 0
     no_caption_counter = 0
 
-    for page in pages_list:                 # for each page in the list of pages
-        for image in page.images.keys():    # for each image in the pages dictionary of images
+    for page in pages_list:  # for each page in the list of pages
+        for image in page.images.keys():  # for each image in the pages dictionary of images
             try:
-                if list_of_images[image]:   # if image key is already in the list of images
+                if list_of_images[image]:  # if image key is already in the list of images
                     if page.images[image].caption:
                         if list_of_images[image].caption:
                             if list_of_images[image].caption == page.images[image].caption:
@@ -755,80 +816,114 @@ def create_master_list(pages_list):
                                                                   list_of_images[image].caption, True) > .80:
                                     duplicate_counter += 1
                                 else:
-                                    list_of_images[image].alt_captions.append(page.images[image].caption)  # add current caption to alt captions
+                                    list_of_images[image].alt_captions.append(
+                                        page.images[image].caption)  # add current caption to alt captions
                                     alt_captions_counter += 1
                         else:
                             list_of_images[image].caption = page.images[image].caption
                         list_of_images[image].url_sources += page.url + " "
 
             except KeyError:
-                list_of_images[image] = page.images[image]    # if image is not in the dictionary add it to it
+                list_of_images[image] = page.images[image]  # if image is not in the dictionary add it to it
                 list_of_images[image].url_sources += page.url + " "
 
             if list_of_images[image].transcription:
                 transcript_counter += 1
             if page.images[image].caption:
                 caption_counter += 1
-        if page.bibliography:                                 # if there is a bibliography for the page
-            list_of_bibs.append(page.bibliography)            # append bibliography to the list of bibliographies
-        if page.is_guide:                                     # if this is a GUIDE page
-            guide_pages.append(page.url)                     # append the URL to the list of GUIDE URLs
+        if page.bibliography:  # if there is a bibliography for the page
+            list_of_bibs.append(page.bibliography)  # append bibliography to the list of bibliographies
+        if page.is_guide:  # if this is a GUIDE page
+            guide_pages.append(page.url)  # append the URL to the list of GUIDE URLs
 
     for image in list_of_images.keys():
         if not list_of_images[image].caption:
             no_caption_counter += 1
     return list_of_bibs, list_of_images, guide_pages, transcript_counter, \
-           caption_counter, duplicate_counter, alt_captions_counter, no_caption_counter   # return all 3 structures
+        caption_counter, duplicate_counter, alt_captions_counter, no_caption_counter  # return all 3 structures
 
 
 def write_csv(images: dict, bibliographies: list):
     """
     Uses the csv library to write .csv files containing the image's information
-    :param page_list: A list of pages that will have their contents output
+    :param images: The master list of all images that were scraped
+    :param bibliographies: The master list of all bibliographies that were scraped
     :return: None
     """
     contentdm_columns = ["Title", "Alt. Title", "Identifier", "Creator", "Subject Keywords", "Subject", "Date",
                          "Date Digitized", "Date Uploaded", "Date Accepted", "Publisher", "Contributors", "Type",
                          "Format", "Source", "Language", "Relation", "Coverage Spatial", "Coverage Temporal",
-                         "Rights", "Audience", "Description", "Transcript", "Originating Institution"]
-
-    to_csv = input("Do you want to create csv files? (y/n): ")  # input check for if the user wants to output csv files
-    csv_path = "/Users/bereacollege/Desktop/PMSS_Scraper/csv/"  # using the os module, the current directory plus /csv/ is where they will be stored
+                         "Rights", "Audience", "Description", "Transcript", "Originating Institution", "Filename"]
+    identifier = 0
+    saved_file_names = []
+    # using the os module, the current directory plus /csv/ is where they will be stored
+    csv_path = "/Users/bereacollege/Desktop/PMSS_Scraper/csv/"
     try:  # try to go into the csv directory
         os.chdir(csv_path)
     except FileNotFoundError:  # if the csv directory doesnt exist
         os.mkdir(csv_path)  # make the csv directory
         os.chdir(csv_path)  # change to the csv directory
-    if to_csv.lower() == "y":  # if the user responded yes
-        with open("Images_for_contentdm.csv", 'w') as csvfile:  # open csv file for the page we are currently on
-            file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
-            csv_data = [contentdm_columns]  # the first row are the column headings
-            for image in images.keys():  # for each image in our images dictionary
-                csv_data.append([images[image].file_name, "", "", "", images[image].tags, "", "",
-                 "", images[image].upload_date, "", "", "", "",
-                 "", "", "", "", "", "",
-                 "", "", images[image].caption, images[image].transcription, ""]) # append the file name, transcription, and upload date
-            file_writer.writerows(csv_data)  # write the information to the file
-            csvfile.close()  # close the file
+    for root, dirs, files in os.walk("/Users/bereacollege/Desktop/PMSS_Scraper/CONTENTdm/Images/", topdown=False):
+        for name in files:
+            saved_file_names.append(name[:-4])
+    to_ignore = []
+    for image in images:
+        if image not in saved_file_names:
+            to_ignore.append(image)
+    print(f"{len(to_ignore)} items have been removed.")
+    final_master_list = {}
+    for image in images:
+        if image not in to_ignore:
+            final_master_list[image] = images[image]
+    images = final_master_list
+    with open("Images_for_contentdm.csv", 'w') as csvfile:  # open csv file for the page we are currently on
+        file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
+        csv_data = [contentdm_columns]  # the first row are the column headings
+        for image in images.keys():  # for each image in our images dictionary
+            csv_data.append([images[image].file_name, "", identifier, "Unknown", images[image].tags, "", "",
+                             images[image].upload_date, images[image].upload_date, "Image", "",
+                             "Helen Hayes Wykle & Ann Angel Eberhardt", "",
+                             "", "", "", "", "", "",
+                             "All rights reserved, Pine Mountain Settlement School", "", images[image].caption, images[image].transcription,
+                             "Pine Mountain Settlement School", images[image].file_name])  # append the file name, transcription, and upload date
+            identifier += 1
+        file_writer.writerows(csv_data)  # write the information to the file
+        csvfile.close()  # close the file
 
-        with open("Bibliographies_for_contentdm.csv", 'w') as csvfile:  # open csv file for the page we are currently on
-            bib_file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
-            csv_data = [contentdm_columns]
-            headers = ["Title", "Alt. Title", "Identifier", "Alt. Creator",
-                       "Subject Keyword", "Subject LCSH", "Date", "Date digital", "", "Acquisition",
-                       "Publisher", "Contributor", "Type", "Format", "Source", "Language", "Relation",
-                       "Coverage Spatial", "Coverage Temporal", "Rights", "", "Description", "Creator"]  # the first row are the column headings
-            for bib in bibliographies:  # for each image in our images dictionary
-                current_bib = []
-                current_keys = bib.keys()
-                for header in headers:
-                    if header in current_keys:
-                        current_bib.append(bib[header])
-                    else:
-                        current_bib.append("")
-                csv_data.append(current_bib)  # append the file name, transcription, and upload date
-            bib_file_writer.writerows(csv_data)  # write the information to the file
-            csvfile.close()  # close the file
+    with open("Bibliographies_for_contentdm.csv", 'w') as csvfile:  # open csv file for the page we are currently on
+        bib_file_writer = csv.writer(csvfile)  # store the writer for the csv file to a variable
+        csv_data = [contentdm_columns]
+        headers = ["Title", "Alt. Title", "Identifier", "Alt. Creator",
+                   "Subject Keyword", "Subject LCSH", "Date", "Date digital", "", "Acquisition",
+                   "Publisher", "Contributor", "Type", "Format", "Source", "Language", "Relation",
+                   "Coverage Spatial", "Coverage Temporal", "Rights", "", "Description",
+                   "Creator"]  # the first row are the column headings
+        for bib in bibliographies:  # for each image in our images dictionary
+            tags = bib["Subject Keyword"]
+            tags = tags.split(";")
+            current_bib = []
+            final_tags = ""
+            for tag in tags:
+                if tag:  # if the descriptive tag is not blank
+                    cleaned_tag = tag.replace(u'\xa0', u' ')  # replace "NBSP" with an actual space
+                    if len(cleaned_tag) > 2:  # if the tag is bigger than 2 characters
+                        while cleaned_tag[0] == " ":  # while the first element is not an actual character
+                            cleaned_tag = cleaned_tag[1:]  # save contents except the first element
+                        while cleaned_tag[-1] == " ":  # while the last element is not an actual character
+                            cleaned_tag = cleaned_tag[:-1]  # save contents except the last element
+                        final_tags += cleaned_tag + ", "  # concatenate the tag to a string
+            bib["Subject Keyword"] = final_tags
+            bib["Identifier"] = identifier
+            current_keys = bib.keys()
+            for header in headers:
+                if header in current_keys:
+                    current_bib.append(bib[header])
+                else:
+                    current_bib.append("")
+            csv_data.append(current_bib)  # append the file name, transcription, and upload date
+            identifier += 1
+        bib_file_writer.writerows(csv_data)  # write the information to the file
+        csvfile.close()  # close the file
 
 
 def compare_scraped_and_phpmyadmin_images(list_of_posts: list, image_dictionary: dict):
@@ -841,7 +936,7 @@ def compare_scraped_and_phpmyadmin_images(list_of_posts: list, image_dictionary:
     image_matches = 0  # counter to see how many images match
     print(len(list_of_posts))  # prints the number of posts within phpmyadmin
     print(len(image_dictionary))  # prints the number of images in the dictionary
-    for post in list_of_posts:   # for each post in the list of posts of PHPmyadmin
+    for post in list_of_posts:  # for each post in the list of posts of PHPmyadmin
         for scraped_img in image_dictionary.keys():  # for each image scraped from the website that is in the img dict
             if post.meta_value == image_dictionary[scraped_img].file_name:  # if the post value equals the image scraped
                 print(f"{post.meta_value}: True")  # images have matched
@@ -864,10 +959,11 @@ def print_results(pages: list, images: dict, transcript_counter: int, caption_co
     :param no_caption_counter: Integer, and it keeps up with how many images do not have captions
     :return: None
     """
-    print(f"{len(pages)} pages scraped")   # prints how many pages that we have scraped
+    print(f"{len(pages)} pages scraped")  # prints how many pages that we have scraped
     print(f"{len(images)} images scraped")  # prints how many images that we have scraped
     print(f"{transcript_counter} transcriptions scraped")  # prints how many transcriptions we have scraped
-    print(f"{caption_counter - (duplicate_counter + alt_captions_counter)} captions scraped")  # prints the number of captions we have scraped
+    # prints the number of captions we have scraped
+    print(f"{caption_counter - (duplicate_counter + alt_captions_counter)} captions scraped")
     print(f"{no_caption_counter} images with no captions")  # prints how many images we do not have with captions
     print(f"{alt_captions_counter} alternate captions scraped")  # prints how many alternate captions we have scraped
     print(f"{duplicate_counter} duplicate captions scraped")  # prints how many duplicate captions we have scraped
@@ -882,29 +978,50 @@ def write_result_files(bibliographies: list, images: dict, guide_pages: list):
     :param guide_pages: A list of all the guided web pages
     :return: None
     """
-    with open("Bibliographies_list", "w") as bib_file:   # opens the bibliography file
+    with open("Bibliographies_list", "w") as bib_file:  # opens the bibliography file
         info_to_write = f"{len(bibliographies)} bibliographies\n\n"  # writes the number of bibliographies
         for bib in bibliographies:  # for each bibliography in the list of bibliographies
             for attr in bib.keys():  # for each column in each bibliography
                 info_to_write += f"{attr}: {bib[attr]}\n"  # write the column name and what is stored there
             info_to_write += "\n\n"
         bib_file.write(info_to_write)  # writes all bibliography info into the file
-    with open("images_list", "w") as img_file: # opens the image file
-        info_to_write = f"{len(images)} images\n\n"   # writes the number of images
-        for img in images.keys():    # for each image in the list of images
+    with open("images_list", "w") as img_file:  # opens the image file
+        info_to_write = f"{len(images)} images\n\n"  # writes the number of images
+        for img in images.keys():  # for each image in the list of images
             # add the image information
-            info_to_write += f"File name: {images[img].file_name}\n"\
-                f"Caption: {images[img].caption}\n"\
-                f"Resized resolution: {images[img].image_resized_resolution[0]}x{images[img].image_resized_resolution[1]}\n" \
-                f"Transcription: {images[img].transcription}\n"\
+            info_to_write += f"File name: {images[img].file_name}\n" \
+                f"Caption: {images[img].caption}\n" \
+                f"Resized resolution: {images[img].image_resized_resolution[0]}x" \
+                f"{images[img].image_resized_resolution[1]}\n" \
+                f"Transcription: {images[img].transcription}\n" \
                 f"Upload date: {images[img].upload_date}\n\n\n"
         img_file.write(info_to_write)  # writes all image info into the file
 
     with open("guide_urls", "w") as guide_file:  # opens the file in write mode
         info_to_write = f"{len(guide_pages)} guide pages\n\n"  # add the number of guide pages there are
-        for url in guide_pages:               # for each url in the url list
-            info_to_write += f"{url}\n"       # puts URL in the file
-        guide_file.write(info_to_write)       # write all the information into the file
+        for url in guide_pages:  # for each url in the url list
+            info_to_write += f"{url}\n"  # puts URL in the file
+        guide_file.write(info_to_write)  # write all the information into the file
+
+
+def package_contents(images):
+    scraped_path = "/Volumes/Elements/Scraped_Images/"
+    source_path = "/Volumes/Elements/PMSS_ARCHIVE"
+    for root, dirs, files in os.walk(scraped_path, topdown=False):
+        for name in files:
+            if name[:-4] in images:
+                if images[name[:-4]].file_name[-3:] != "tif":
+                    if not path.exists("/Users/bereacollege/Desktop/PMSS_Scraper/CONTENTdm/Images/" + name):
+                        copyfile(root + "/" + name, "/Users/bereacollege/Desktop/PMSS_Scraper/CONTENTdm/Images/" + name)
+    all_filenames = {}
+    for root, dirs, files in os.walk(source_path, topdown=False):
+        for name in files:
+            all_filenames[name] = root
+    for image in images:
+        if images[image].file_name in all_filenames.keys():
+            if images[image].file_name[-3:] == "tif":
+                if not path.exists("/Users/bereacollege/Desktop/PMSS_Scraper/CONTENTdm/Images/" + images[image].file_name):
+                    copyfile(all_filenames[images[image].file_name] + "/" + images[image].file_name, "/Users/bereacollege/Desktop/PMSS_Scraper/CONTENTdm/Images/" + images[image].file_name)
 
 
 def run_time():
@@ -925,7 +1042,8 @@ def main():
     web(links_visited, 'https://pmss.wpengine.com/', pages_list)
     print("~~----Scraping Results----~~")
     bib_master_list, images_master_list, guide_pages, transcript_counter, \
-        caption_counter, duplicate_counter, alt_captions_counter, no_caption_counter = create_master_list(pages_list)  # Save the master lists to variables
+        caption_counter, duplicate_counter, alt_captions_counter, no_caption_counter = create_master_list(
+            pages_list)  # Save the master lists to variables
 
     print_results(pages_list, images_master_list, transcript_counter, caption_counter, duplicate_counter,
                   bib_master_list, alt_captions_counter, no_caption_counter)
@@ -938,16 +1056,16 @@ def main():
         images_master_list[stripped_images[to_change]].file_name = hdd_images[items_to_fix[to_change]]
 
     write_csv(images_master_list, bib_master_list)
-    for image in images_master_list.keys():
-        captions = images_master_list[image].alt_captions
-        captions.append(images_master_list[image].caption)
+    package_contents(images_master_list)
+    # for image in images_master_list.keys():
+    #     captions = images_master_list[image].alt_captions
+    #     captions.append(images_master_list[image].caption)
 
     # phpmyadmin_images = extract_csv_information("image_list_with_captions-j45ab3_posts.csv")
     run_time()
 
 
 start_time = time.time()
-
 
 if __name__ == "__main__":
     main()
