@@ -14,7 +14,7 @@ import bs4
 from Post import Post
 from io import open as iopen
 import string
-from shutil import copyfile
+from shutil import copy as dm_copy
 
 
 def levenshtein_ratio_and_distance(s, t, ratio_calc=False):
@@ -116,7 +116,7 @@ def file_split_website(list_of_images):
 
 def compare_page_to_hdd(web_images, hdd_images):
     """
-    A fucnction that will compare the file names of the web site to the file names of the hard drive.
+    A function that will compare the file names of the web site to the file names of the hard drive.
     :param web_images: Images from the web site
     :param hdd_images: Images from the hard drive
     :return: Dictionary of all images that have matched with each other
@@ -863,17 +863,17 @@ def write_csv(images: dict, bibliographies: list):
     except FileNotFoundError:  # if the csv directory doesnt exist
         os.mkdir(csv_path)  # make the csv directory
         os.chdir(csv_path)  # change to the csv directory
-    for root, dirs, files in os.walk("/Users/bereacollege/Desktop/PMSS_Scraper/CONTENTdm/Images/", topdown=False):
+    for root, dirs, files in os.walk("/Users/bereacollege/Desktop/for CONTENTdm/Images/", topdown=False):
         for name in files:
             saved_file_names.append(name[:-4])
-    to_ignore = []
+    to_remove = []
     for image in images:
         if image not in saved_file_names:
-            to_ignore.append(image)
-    print(f"{len(to_ignore)} items have been removed.")
+            to_remove.append(image)
+    print(f"{len(to_remove)} items have been removed.")
     final_master_list = {}
     for image in images:
-        if image not in to_ignore:
+        if image not in to_remove:
             final_master_list[image] = images[image]
     images = final_master_list
     with open("Images_for_contentdm.csv", 'w') as csvfile:  # open csv file for the page we are currently on
@@ -899,20 +899,23 @@ def write_csv(images: dict, bibliographies: list):
                    "Coverage Spatial", "Coverage Temporal", "Rights", "", "Description",
                    "Creator"]  # the first row are the column headings
         for bib in bibliographies:  # for each image in our images dictionary
-            tags = bib["Subject Keyword"]
-            tags = tags.split(";")
-            current_bib = []
-            final_tags = ""
-            for tag in tags:
-                if tag:  # if the descriptive tag is not blank
-                    cleaned_tag = tag.replace(u'\xa0', u' ')  # replace "NBSP" with an actual space
-                    if len(cleaned_tag) > 2:  # if the tag is bigger than 2 characters
-                        while cleaned_tag[0] == " ":  # while the first element is not an actual character
-                            cleaned_tag = cleaned_tag[1:]  # save contents except the first element
-                        while cleaned_tag[-1] == " ":  # while the last element is not an actual character
-                            cleaned_tag = cleaned_tag[:-1]  # save contents except the last element
-                        final_tags += cleaned_tag + ", "  # concatenate the tag to a string
-            bib["Subject Keyword"] = final_tags
+            try:
+                tags = bib["Subject Keyword"]
+                tags = tags.split(";")
+                current_bib = []
+                final_tags = ""
+                for tag in tags:
+                    if tag:  # if the descriptive tag is not blank
+                        cleaned_tag = tag.replace(u'\xa0', u' ')  # replace "NBSP" with an actual space
+                        if len(cleaned_tag) > 2:  # if the tag is bigger than 2 characters
+                            while cleaned_tag[0] == " ":  # while the first element is not an actual character
+                                cleaned_tag = cleaned_tag[1:]  # save contents except the first element
+                            while cleaned_tag[-1] == " ":  # while the last element is not an actual character
+                                cleaned_tag = cleaned_tag[:-1]  # save contents except the last element
+                            final_tags += cleaned_tag + ", "  # concatenate the tag to a string
+                bib["Subject Keyword"] = final_tags
+            except KeyError:
+                pass
             bib["Identifier"] = identifier
             current_keys = bib.keys()
             for header in headers:
@@ -1011,8 +1014,8 @@ def package_contents(images):
         for name in files:
             if name[:-4] in images:
                 if images[name[:-4]].file_name[-3:] != "tif":
-                    if not path.exists("/Users/bereacollege/Desktop/PMSS_Scraper/CONTENTdm/Images/" + name):
-                        copyfile(root + "/" + name, "/Users/bereacollege/Desktop/PMSS_Scraper/CONTENTdm/Images/" + name)
+                    if not path.exists("/Users/bereacollege/Desktop/for CONTENTdm/Images/" + name):
+                        dm_copy(root + "/" + name, "/Users/bereacollege/Desktop/for CONTENTdm/Images/")
     all_filenames = {}
     for root, dirs, files in os.walk(source_path, topdown=False):
         for name in files:
@@ -1020,8 +1023,8 @@ def package_contents(images):
     for image in images:
         if images[image].file_name in all_filenames.keys():
             if images[image].file_name[-3:] == "tif":
-                if not path.exists("/Users/bereacollege/Desktop/PMSS_Scraper/CONTENTdm/Images/" + images[image].file_name):
-                    copyfile(all_filenames[images[image].file_name] + "/" + images[image].file_name, "/Users/bereacollege/Desktop/PMSS_Scraper/CONTENTdm/Images/" + images[image].file_name)
+                if not path.exists("/Users/bereacollege/Desktop/for CONTENTdm/Images/" + images[image].file_name):
+                    dm_copy(all_filenames[images[image].file_name] + "/" + images[image].file_name, "/Users/bereacollege/Desktop/for CONTENTdm/Images/")
 
 
 def run_time():
@@ -1054,9 +1057,9 @@ def main():
     items_to_fix = compare_page_to_hdd(stripped_images, hdd_images)
     for to_change in items_to_fix:
         images_master_list[stripped_images[to_change]].file_name = hdd_images[items_to_fix[to_change]]
-
-    write_csv(images_master_list, bib_master_list)
     package_contents(images_master_list)
+    write_csv(images_master_list, bib_master_list)
+
     # for image in images_master_list.keys():
     #     captions = images_master_list[image].alt_captions
     #     captions.append(images_master_list[image].caption)
